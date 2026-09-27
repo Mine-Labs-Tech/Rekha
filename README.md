@@ -1,4 +1,4 @@
-# Rekha
+# Rekha - High-Performance System-1 Control Plane and Gateway for Production RAG
 
 <p align="center">
   <a href="https://pypi.org/project/minelabs-rekha/"><img src="https://img.shields.io/pypi/v/minelabs-rekha.svg?color=blue" alt="PyPI version" /></a>
