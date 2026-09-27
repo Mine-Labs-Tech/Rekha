@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rekha Documentation — Production RAG Control Plane Cookbook & Architecture</title>
+  <meta name="description" content="Super-detailed technical documentation, integration cookbook, and architectural reference for Rekha: the sub-35ms non-autoregressive control plane for production RAG.">
+
+  <!-- Inter & JetBrains Mono Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            dark: {
+              950: '#000000',
+              900: '#060606',
+              850: '#0A0A0A',
+              800: '#121212',
+              750: '#181818',
+              700: '#222222',
+              600: '#2E2E2E',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      background-color: #000000;
+      color: #D4D4D4;
+    }
+    
+    /* Code highlight tokens */
+    .c-kw { color: #F472B6; font-weight: 500; }
+    .c-fn { color: #60A5FA; }
+    .c-st { color: #34D399; }
+    .c-cm { color: #71717A; font-style: italic; }
+    .c-num { color: #FBBF24; }
+    .c-dec { color: #A78BFA; font-weight: 600; }
+    .c-cls { color: #F87171; font-weight: 600; }
+
+    /* Custom scrollbar */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: #000000; }
+    ::-webkit-scrollbar-thumb { background: #222222; border-radius: 2px; }
+    ::-webkit-scrollbar-thumb:hover { background: #383838; }
+
+    /* Smooth anchor offset */
+    section[id] {
+      scroll-margin-top: 5rem;
+    }
+
+    .active-nav-link {
+      color: #FFFFFF !important;
+      background-color: #141414;
+      border-left: 2px solid #FFFFFF;
+      padding-left: 0.625rem !important;
+      font-weight: 500;
+    }
+
+    .toc-active {
+      color: #FFFFFF !important;
+      border-left: 2px solid #FFFFFF;
+      padding-left: 0.5rem;
+      font-weight: 500;
+    }
+  </style>
+</head>
+
+<body class="bg-black text-[#D4D4D4] font-sans antialiased min-h-screen flex flex-col selection:bg-neutral-800 selection:text-white">
+
+  <!-- TOP HEADER -->
+  <header class="sticky top-0 z-50 w-full border-b border-[#1A1A1A] bg-black/90 backdrop-blur-md">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
+      
+      <!-- Brand & Title -->
+      <div class="flex items-center gap-4">
+        <a href="index.html" class="flex items-center gap-2.5 group">
+          <div class="w-6 h-6 rounded bg-white text-black flex items-center justify-center font-mono font-bold text-xs tracking-tight shadow-sm group-hover:scale-105 transition-transform">
+            R
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="font-semibold text-white tracking-tight text-sm">Rekha</span>
+            <span class="text-[10px] font-mono text-neutral-400 bg-neutral-900 border border-neutral-800 px-1.5 py-0.5 rounded">v0.1.0</span>
+          </div>
+        </a>
+
+        <div class="hidden sm:block h-4 w-px bg-neutral-800"></div>
+        <span class="hidden sm:inline-block text-xs text-neutral-400 font-mono">Documentation & Cookbook</span>
+      </div>
+
+      <!-- Quick Search Bar & Links -->
+      <div class="flex items-center gap-3">
+        <!-- Live Filter Input -->
+        <div class="relative w-44 sm:w-64">
+          <input 
+            type="text" 
+            id="docSearch" 
+            placeholder="Search docs (Ctrl + K)..." 
+            class="w-full bg-[#0A0A0A] border border-[#222222] focus:border-neutral-500 rounded-md px-3 py-1.5 text-xs text-neutral-200 placeholder-neutral-500 focus:outline-none font-mono"
+            oninput="handleSearch(this.value)"
+          >
+          <div class="absolute right-2.5 top-2 text-[10px] text-neutral-500 font-mono pointer-events-none hidden sm:inline">⌘K</div>
+        </div>
+
+        <a href="index.html" class="text-xs font-mono text-neutral-400 hover:text-white px-2 py-1 rounded transition-colors hidden md:inline">
+          ← Overview
+        </a>
+
+        <a href="https://github.com/MineLabs/Rekha" target="_blank" class="flex items-center gap-1.5 text-xs text-neutral-300 hover:text-white bg-[#0D0D0D] hover:bg-[#161616] border border-[#222222] px-2.5 py-1.5 rounded transition-colors font-mono">
+          <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+          <span class="hidden sm:inline">GitHub</span>
+        </a>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- MAIN DOCUMENTATION CONTAINER (3-COLUMN LAYOUT) -->
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 w-full flex-1 flex">
+    
+    <!-- LEFT SIDEBAR: STICKY HIERARCHICAL NAVIGATION (Desktop) -->
+    <aside id="docSidebar" class="w-64 flex-shrink-0 border-r border-[#1A1A1A] py-8 pr-6 hidden md:block sticky top-14 h-[calc(100vh-3.5rem)] overflow-y-auto text-xs font-mono">
+      <div class="space-y-7" id="sidebarNav">
+        
+        <!-- Group 1: Getting Started -->
+        <div>
+          <div class="text-[10px] font-semibold uppercase tracking-wider text-neutral-500 mb-2.5">
+            01. Getting Started
+          </div>
+          <ul class="space-y-1 text-neutral-400">
+            <li>
+              <a href="#overview" class="nav-item block px-2.5 py-1.5 rounded hover:text-white hover:bg-neutral-900 transition-colors">
+                Overview & Mental Model
+              </a>
+            </li>
+            <li>
+              <a href="#installation" class="nav-item block px-2.5 py-1.5 rounded hover:text-white hover:bg-neutral-900 transition-colors">
+                Installation & Weights
+              </a>
+            </li>
+            <li>
+              <a href="#quickstart" class="nav-item block px-2.5 py-1.5 rounded hover:text-white hover:bg-neutral-900 transition-colors">
+                60-Second Quickstart
+              </a>
+            </li>
+            <li>
+              <a href="#latency-math" class="nav-item block px-2.5 py-1.5 rounded hover:text-white hover:bg-neutral-900 transition-colors">
+                The Latency Paradox
+              </a>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Group 2: Framework Cookbook -->
+        <div>
+          <div class="text-[10px] font-semibold uppercase tracking-wider text-neutral-500 mb-2.5">
+            02. Framework Cookbook
+          </div>
+          <ul class="space-y-1 text-neutral-400">
+            <li>
+              <a href="#cookbook-langchain" class="nav-item block px-2.5 py-1.5 rounded hover:text-white hover:bg-neutral-900 transition-colors">
+                LangChain & LangGraph
+              </a>
+            </li>
+            <li>
+              <a href="#cookbook-llamaindex" class="nav-item block px-2.5 py-1.5 rounded hover:text-white hover:bg-neutral-900 transition-colors">
+                LlamaIndex Integration
+              </a>
+            </li>
+            <li>
+              <a href="#cookbook-fastapi" class="nav-item block px-2.5 py-1.5 rounded hover:text-white hover:bg-neutral-900 transition-colors">
+                FastAPI & SSE Streaming
+              </a>
+            </li>
+            <li>
+              <a href="#cookbook-openai" class="nav-item block px-2.5 py-1.5 rounded hover:text-white hover:bg-neutral-900 transition-colors">
+                Raw OpenAI / Anthropic
+              </a>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Group 3: The 5 Control Layers -->
+        <div>
+          <div class="text-[10px] font-semibold uppercase tracking-wider text-neutral-500 mb-2.5">
+            03. The 5 Control Layers
+          </div>
+          <ul class="space-y-1 text-neutral-400">
+            <li>
+              <a href="#layer-guard" class="nav-item block px-2.5 py-1.5 rounded hover:text-white hover:bg-neutral-900 transition-colors">
+                Stage 01: Inbound Guard
+              </a>
+            </li>
+            <li>
+              <a href="#layer-smriti" class="nav-item block px-2.5 py-1.5 rounded hover:text-white hover:bg-neutral-900 transition-colors">
+                Stage 02: Smriti Cache
+              </a>
+            </li>
+            <li>
+              <a href="#layer-disha" class="nav-item block px-2.5 py-1.5 rounded hover:text-white hover:bg-neutral-900 transition-colors">
+                Stage 03: Disha Router
+              </a>
+            </li>
+            <li>
+              <a href="#layer-samkshep" class="nav-item block px-2.5 py-1.5 rounded hover:text-white hover:bg-neutral-900 transition-colors">
+                Stage 04: Samkshep Slicer
+              </a>
+            </li>
+            <li>
+              <a href="#layer-satya" class="nav-item block px-2.5 py-1.5 rounded hover:text-white hover:bg-neutral-900 transition-colors">
+                Stage 05: Satya Praman
+              </a>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Group 4: Production & Air-Gap -->
+        <div>
+          <div class="text-[10px] font-semibold uppercase tracking-wider text-neutral-500 mb-2.5">
+            04. Production & Ops
+          </div>
+          <ul class="space-y-1 text-neutral-400">
+            <li>
+              <a href="#airgap-docker" class="nav-item block px-2.5 py-1.5 rounded hover:text-white hover:bg-neutral-900 transition-colors">
+                Air-Gapped Dockerfile
+              </a>
+            </li>
+            <li>
+              <a href="#observability" class="nav-item block px-2.5 py-1.5 rounded hover:text-white hover:bg-neutral-900 transition-colors">
+                Telemetry & Headers
+              </a>
+            </li>
+            <li>
+              <a href="#api-reference" class="nav-item block px-2.5 py-1.5 rounded hover:text-white hover:bg-neutral-900 transition-colors">
+                API Reference & Schemas
+              </a>
+            </li>
+          </ul>
+        </div>
+
+      </div>
+    </aside>
+
+    <!-- CENTER COLUMN: CORE DOCUMENTATION CONTENT -->
+    <main class="flex-1 py-8 md:px-10 max-w-4xl min-w-0">
+
+      <!-- SECTION 01: OVERVIEW & MENTAL MODEL -->
+      <section id="overview" class="mb-16">
+        <div class="text-[10px] font-mono uppercase tracking-widest text-neutral-500 mb-1">Architecture & Specification</div>
+        <h1 class="text-3xl font-semibold text-white tracking-tight mb-4">
+          Rekha Control Plane Architecture
+        </h1>
+        <p class="text-sm text-neutral-300 leading-relaxed mb-6">
+          <b>Rekha</b> (named after the engineering concept of a definitive boundary) is an open-source, air-gapped <b>System-1 control plane</b> for Retrieval-Augmented Generation (RAG). It provides a deterministic, sub-35ms inbound-to-outbound security and context envelope around your existing vector database and LLM.
+        </p>
+
+        <!-- Architectural Comparison Callout -->
+        <div class="border border-[#1F1F1F] bg-[#0A0A0A] rounded-lg p-5 mb-8">
+          <div class="text-xs font-mono font-semibold text-white mb-2 flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+            The System-1 vs. System-2 Mental Model
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs mt-3">
+            <div class="bg-black/60 border border-neutral-800/80 p-3.5 rounded">
+              <div class="font-mono text-neutral-400 font-semibold mb-1">Flawed Pattern: LLM-as-a-Judge (System-2)</div>
+              <p class="text-neutral-500 leading-relaxed">
+                Calling GPT-4o or Claude to check query safety or verify answers adds <b>1,500ms – 3,000ms</b> of latency and costs $0.01 per query. Generative judges are susceptible to prompt injection bypasses.
+              </p>
+            </div>
+            <div class="bg-black/60 border border-neutral-800/80 p-3.5 rounded">
+              <div class="font-mono text-emerald-400 font-semibold mb-1">Rekha Pattern: Non-Autoregressive Gate (System-1)</div>
+              <p class="text-neutral-400 leading-relaxed">
+                Evaluates query classification, intent caching, micro-chunk context pruning, and entity anchors in a single forward encoder pass in <b>sub-35ms</b>. Completely deterministic, air-gapped, zero external network calls.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- ASCII Architecture Schematic -->
+        <div class="border border-[#1C1C1C] bg-[#070707] rounded-lg p-5 font-mono text-[11px] overflow-x-auto text-neutral-300 mb-6">
+          <div class="text-[10px] text-neutral-500 mb-2">// Global Request Flow Diagram</div>
+<pre>User Query ──► [ REKHA GATEWAY: INBOUND BOUNDARY ]
+                 ├── Layer 1: Inbound Guard Gate   (Jailbreak & PII Filter: ~37ms)
+                 ├── Layer 2: Smriti Intent Gate   (Zero-Cost Canonical Cache: <5ms)
+                 └── Layer 3: Disha Query Router   (Bypass / SQL Tool / Vector: ~38ms)
+                                     │
+                                     ▼
+               [ RETRIEVAL: CONTEXT PRUNING ]
+                 └── Layer 4: Samkshep Slicer      (Syntax-Safe Pruning -54%: ~69ms)
+                                     │
+                                     ▼
+               [ EXISTING PIPELINE ] ──► Vector DB ──► Model (GPT-4o, Claude)
+                                     │
+                                     ▼
+               [ REKHA GATEWAY: OUTBOUND BOUNDARY ]
+                 └── Layer 5: Satya Praman Gate    (Entity Anchor Audit: ~72ms)
+                                     │
+                                     ▼
+                               Stream to User</pre>
+        </div>
+      </section>
+
+      <!-- SECTION 02: INSTALLATION & WEIGHTS -->
+      <section id="installation" class="mb-16 border-t border-[#1A1A1A] pt-12">
+        <div class="text-[10px] font-mono uppercase tracking-widest text-neutral-500 mb-1">Setup</div>
+        <h2 class="text-2xl font-semibold text-white tracking-tight mb-3">Installation & Offline Weights</h2>
+        <p class="text-sm text-neutral-400 mb-6">
+          Rekha is distributed via PyPI. It has zero required cloud dependencies and runs entirely on your local CPU or GPU.
+        </p>
+
+        <!-- Pip command block -->
+        <div class="relative bg-[#0A0A0A] border border-[#222222] rounded-lg p-4 font-mono text-xs mb-6">
+          <div class="flex items-center justify-between text-neutral-500 pb-2 mb-2 border-b border-[#1A1A1A]">
+            <span>Terminal</span>
+            <button onclick="copySnippet('pip install minelabs-rekha')" class="text-neutral-400 hover:text-white transition-colors flex items-center gap-1 text-[11px]">
+              <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+              <span>Copy</span>
+            </button>
+          </div>
+          <code class="text-neutral-200"><span class="text-neutral-500 select-none">$ </span>pip install minelabs-rekha</code>
+        </div>
+
+        <div class="text-xs text-neutral-400 leading-relaxed space-y-3 mb-6">
+          <p>
+            <b>Hardware Requirements:</b>
+          </p>
+          <ul class="list-disc pl-5 space-y-1.5 text-neutral-300">
+            <li><b>Local CPU:</b> Minimal footprint. Executes under ~35ms on standard modern 4-core cloud vCPUs (c6i, t4g, n2-standard).</li>
+            <li><b>GPU Acceleration (Optional):</b> If PyTorch detects CUDA or Apple Silicon MPS, forward passes drop to <b>sub-12ms</b>.</li>
+            <li><b>Zero External Network Calls:</b> At no point during inference does Rekha query OpenAI, HuggingFace Hub, or external telemetry servers.</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- SECTION 03: 60-SECOND QUICKSTART -->
+      <section id="quickstart" class="mb-16 border-t border-[#1A1A1A] pt-12">
+        <div class="text-[10px] font-mono uppercase tracking-widest text-neutral-500 mb-1">Developer Ergonomics</div>
+        <h2 class="text-2xl font-semibold text-white tracking-tight mb-3">60-Second Quickstart</h2>
+        <p class="text-sm text-neutral-400 mb-6">
+          Adding Rekha does not require restructuring your database, re-embedding vectors, or changing system prompts. Wrap your existing RAG execution function with the <code class="text-pink-400 font-mono">@gateway.protect</code> decorator.
+        </p>
+
+        <!-- Quickstart Code Block -->
+        <div class="relative bg-[#0A0A0A] border border-[#222222] rounded-lg p-5 font-mono text-xs mb-6 overflow-x-auto leading-relaxed">
+          <div class="flex items-center justify-between text-neutral-500 pb-2 mb-3 border-b border-[#1A1A1A]">
+            <span>main_pipeline.py</span>
+            <button onclick="copySnippet(quickstartCodeSnippet)" class="text-neutral-400 hover:text-white transition-colors flex items-center gap-1 text-[11px]">
+              <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+              <span>Copy Code</span>
+            </button>
+          </div>
+<pre class="text-neutral-300"><code><span class="c-kw">import</span> openai
+<span class="c-kw">from</span> rekha <span class="c-kw">import</span> RekhaGateway
+
+<span class="c-cm"># 1. Initialize the Gateway (loads local weights once)</span>
+gateway = <span class="c-fn">RekhaGateway</span>(
+    target_context_reduction=<span class="c-num">0.50</span>,  <span class="c-cm"># Prune 50% of context noise</span>
+    negative_constraints=[
+        <span class="c-st">"Do not disclose internal employee compensation."</span>,
+        <span class="c-st">"Do not cite discounts higher than 15%."</span>
+    ]
+)
+
+<span class="c-cm"># 2. Decorate your existing RAG query function</span>
+<span class="c-dec">@gateway.protect</span>
+<span class="c-kw">def</span> <span class="c-fn">query_support_rag</span>(query: <span class="c-kw">str</span>):
+    <span class="c-cm"># Fetch documents from your existing Pinecone/Chroma/Weaviate cluster</span>
+    docs = vector_store.<span class="c-fn">search</span>(query, top_k=<span class="c-num">5</span>)
+    raw_context = <span class="c-st">"\n\n"</span>.<span class="c-fn">join</span>([d.text <span class="c-kw">for</span> d <span class="c-kw">in</span> docs])
+
+    <span class="c-cm"># Synthesize answer using your model</span>
+    response = openai.chat.completions.<span class="c-fn">create</span>(
+        model=<span class="c-st">"gpt-4o"</span>,
+        messages=[
+            {<span class="c-st">"role"</span>: <span class="c-st">"system"</span>, <span class="c-st">"content"</span>: f<span class="c-st">"Answer strictly using:\n{raw_context}"</span>},
+            {<span class="c-st">"role"</span>: <span class="c-st">"user"</span>, <span class="c-st">"content"</span>: query}
+        ]
+    )
+    answer = response.choices[<span class="c-num">0</span>].message.content
+    <span class="c-kw">return</span> answer, raw_context
+
+<span class="c-cm"># 3. Call your function as usual</span>
+result = <span class="c-fn">query_support_rag</span>(<span class="c-st">"What are our SLA response times for Tier-1 outages?"</span>)
+
+<span class="c-fn">print</span>(<span class="c-st">"Final Output:"</span>, result.final_output)
+<span class="c-fn">print</span>(<span class="c-st">"Execution Source:"</span>, result.source)          <span class="c-cm"># "CACHE", "RAG_VERIFIED", or "BLOCKED_GUARD"</span>
+<span class="c-fn">print</span>(<span class="c-st">"Control Overhead:"</span>, result.total_overhead_latency_ms, <span class="c-st">"ms"</span>)</code></pre>
+        </div>
+      </section>
+
+      <!-- SECTION 04: THE LATENCY PARADOX -->
+      <section id="latency-math" class="mb-16 border-t border-[#1A1A1A] pt-12">
+        <div class="text-[10px] font-mono uppercase tracking-widest text-neutral-500 mb-1">Systems Engineering</div>
+        <h2 class="text-2xl font-semibold text-white tracking-tight mb-3">The Latency Paradox Explained</h2>
+        <p class="text-sm text-neutral-400 mb-6">
+          Engineers often ask: <i>"How can adding a 5-layer control plane make our RAG pipeline 600ms faster?"</i> The math is rooted in transformer attention complexity.
+        </p>
+
+        <div class="border border-[#1F1F1F] bg-[#0A0A0A] rounded-lg p-6 space-y-4 text-xs font-mono">
+          <div class="text-neutral-400 leading-relaxed font-sans">
+            Large Language Models incur a linear prefill penalty of approximately <b>0.45 ms per prompt token</b> before emitting the first generated token (TTFT).
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+            <div class="bg-black border border-neutral-800 p-4 rounded">
+              <div class="text-neutral-500 uppercase text-[10px] font-semibold mb-1">Traditional RAG (4,000 Tokens)</div>
+              <div class="text-white text-base font-semibold mb-2">~1,800 ms TTFT</div>
+              <p class="text-neutral-500 text-[11px] font-sans">
+                Full 4,000 retrieved tokens sent to the LLM. 50%+ of tokens are filler sentences, boilerplates, and navigational headers.
+              </p>
+            </div>
+
+            <div class="bg-black border border-emerald-900/60 p-4 rounded">
+              <div class="text-emerald-400 uppercase text-[10px] font-semibold mb-1">With Rekha Samkshep Slicing (1,832 Tokens)</div>
+              <div class="text-emerald-400 text-base font-semibold mb-2">~1,004 ms TTFT</div>
+              <p class="text-neutral-400 text-[11px] font-sans">
+                +180ms control plane overhead - 976ms saved in LLM prefill time = <b class="text-white">Net ~796ms faster</b> time to first token.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECTION 05: FRAMEWORK COOKBOOK (INTERACTIVE TABS) -->
+      <section id="cookbook" class="mb-16 border-t border-[#1A1A1A] pt-12">
+        <div class="text-[10px] font-mono uppercase tracking-widest text-neutral-500 mb-1">Integration Cookbook</div>
+        <h2 class="text-2xl font-semibold text-white tracking-tight mb-2">Production Framework Recipes</h2>
+        <p class="text-sm text-neutral-400 mb-6">
+          Select your framework below to view the copy-paste production integration pattern.
+        </p>
+
+        <!-- Framework Tab Switcher -->
+        <div class="flex items-center gap-1 border-b border-[#222222] pb-px mb-6 overflow-x-auto text-xs font-mono">
+          <button onclick="switchTab('langchain')" id="tab-langchain" class="px-4 py-2 border-b-2 border-white text-white font-medium transition-colors">
+            LangChain & LangGraph
+          </button>
+          <button onclick="switchTab('llamaindex')" id="tab-llamaindex" class="px-4 py-2 border-b-2 border-transparent text-neutral-400 hover:text-white transition-colors">
+            LlamaIndex
+          </button>
+          <button onclick="switchTab('fastapi')" id="tab-fastapi" class="px-4 py-2 border-b-2 border-transparent text-neutral-400 hover:text-white transition-colors">
+            FastAPI (SSE Streaming)
+          </button>
+          <button onclick="switchTab('openai')" id="tab-openai" class="px-4 py-2 border-b-2 border-transparent text-neutral-400 hover:text-white transition-colors">
+            Native OpenAI / Anthropic
+          </button>
+        </div>
+
+        <!-- TAB CONTENT: LANGCHAIN -->
+        <div id="content-langchain" class="space-y-4">
+          <p class="text-xs text-neutral-400">
+            Integrate Rekha directly with LangChain chains or LangGraph state machine runnables.
+          </p>
+          <div class="bg-[#0A0A0A] border border-[#222222] rounded-lg p-5 font-mono text-xs overflow-x-auto leading-relaxed">
+            <div class="flex items-center justify-between text-neutral-500 pb-2 mb-3 border-b border-[#1A1A1A]">
+              <span>langchain_rekha_adapter.py</span>
+              <button onclick="copySnippet(codeLangchain)" class="text-neutral-400 hover:text-white transition-colors flex items-center gap-1 text-[11px]">
+                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                <span>Copy</span>
+              </button>
+            </div>
+<pre class="text-neutral-300"><code><span class="c-kw">from</span> langchain_core.runnables <span class="c-kw">import</span> RunnableLambda
+<span class="c-kw">from</span> langchain_community.vectorstores <span class="c-kw">import</span> Chroma
+<span class="c-kw">from</span> langchain_openai <span class="c-kw">import</span> ChatOpenAI
+<span class="c-kw">from</span> rekha <span class="c-kw">import</span> RekhaGateway
+
+gateway = <span class="c-fn">RekhaGateway</span>(target_context_reduction=<span class="c-num">0.55</span>)
+llm = <span class="c-fn">ChatOpenAI</span>(model=<span class="c-st">"gpt-4o"</span>, temperature=<span class="c-num">0</span>)
+
+<span class="c-dec">@gateway.protect</span>
+<span class="c-kw">def</span> <span class="c-fn">run_langchain_pipeline</span>(query: <span class="c-kw">str</span>):
+    <span class="c-cm"># 1. Retrieve raw documents</span>
+    docs = retriever.<span class="c-fn">get_relevant_documents</span>(query)
+    context_str = <span class="c-st">"\n\n"</span>.<span class="c-fn">join</span>([d.page_content <span class="c-kw">for</span> d <span class="c-kw">in</span> docs])
+
+    <span class="c-cm"># 2. Invoke model with prompt</span>
+    prompt = f<span class="c-st">"Context:\n{context_str}\n\nQuestion: {query}"</span>
+    response = llm.<span class="c-fn">invoke</span>(prompt)
+
+    <span class="c-kw">return</span> response.content, context_str</code></pre>
+          </div>
+        </div>
+
+        <!-- TAB CONTENT: LLAMAINDEX -->
+        <div id="content-llamaindex" class="space-y-4 hidden">
+          <p class="text-xs text-neutral-400">
+            Plug Rekha into LlamaIndex's <code class="text-blue-400">QueryEngine</code> workflow.
+          </p>
+          <div class="bg-[#0A0A0A] border border-[#222222] rounded-lg p-5 font-mono text-xs overflow-x-auto leading-relaxed">
+            <div class="flex items-center justify-between text-neutral-500 pb-2 mb-3 border-b border-[#1A1A1A]">
+              <span>llamaindex_rekha.py</span>
+              <button onclick="copySnippet(codeLlamaIndex)" class="text-neutral-400 hover:text-white transition-colors flex items-center gap-1 text-[11px]">
+                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                <span>Copy</span>
+              </button>
+            </div>
+<pre class="text-neutral-300"><code><span class="c-kw">from</span> llama_index.core <span class="c-kw">import</span> VectorStoreIndex
+<span class="c-kw">from</span> rekha <span class="c-kw">import</span> RekhaGateway
+
+gateway = <span class="c-fn">RekhaGateway</span>()
+query_engine = index.<span class="c-fn">as_query_engine</span>(similarity_top_k=<span class="c-num">6</span>)
+
+<span class="c-dec">@gateway.protect</span>
+<span class="c-kw">def</span> <span class="c-fn">llamaindex_query</span>(query_text: <span class="c-kw">str</span>):
+    response = query_engine.<span class="c-fn">query</span>(query_text)
+    
+    <span class="c-cm"># Extract retrieved source nodes as context</span>
+    context = <span class="c-st">"\n\n"</span>.<span class="c-fn">join</span>([n.node.get_content() <span class="c-kw">for</span> n <span class="c-kw">in</span> response.source_nodes])
+    <span class="c-kw">return</span> str(response), context</code></pre>
+          </div>
+        </div>
+
+        <!-- TAB CONTENT: FASTAPI SSE -->
+        <div id="content-fastapi" class="space-y-4 hidden">
+          <p class="text-xs text-neutral-400">
+            A production FastAPI service exposing SSE streaming with zero-lag Inbound Guard and Satya Praman verification headers.
+          </p>
+          <div class="bg-[#0A0A0A] border border-[#222222] rounded-lg p-5 font-mono text-xs overflow-x-auto leading-relaxed">
+            <div class="flex items-center justify-between text-neutral-500 pb-2 mb-3 border-b border-[#1A1A1A]">
+              <span>api_server.py</span>
+              <button onclick="copySnippet(codeFastAPI)" class="text-neutral-400 hover:text-white transition-colors flex items-center gap-1 text-[11px]">
+                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                <span>Copy</span>
+              </button>
+            </div>
+<pre class="text-neutral-300"><code><span class="c-kw">from</span> fastapi <span class="c-kw">import</span> FastAPI, HTTPException, Response
+<span class="c-kw">from</span> pydantic <span class="c-kw">import</span> BaseModel
+<span class="c-kw">from</span> rekha <span class="c-kw">import</span> RekhaGateway
+
+app = <span class="c-fn">FastAPI</span>(title=<span class="c-st">"Enterprise RAG Service"</span>)
+gateway = <span class="c-fn">RekhaGateway</span>()
+
+<span class="c-kw">class</span> <span class="c-cls">ChatRequest</span>(BaseModel):
+    query: <span class="c-kw">str</span>
+
+<span class="c-dec">@app.post</span>(<span class="c-st">"/v1/chat"</span>)
+<span class="c-kw">async def</span> <span class="c-fn">chat_endpoint</span>(req: ChatRequest, response: Response):
+    <span class="c-cm"># Execute pipeline with telemetry</span>
+    result = gateway.<span class="c-fn">execute</span>(
+        query=req.query,
+        rag_executor=my_internal_rag_worker
+    )
+
+    <span class="c-cm"># Add production observability headers</span>
+    response.headers[<span class="c-st">"X-Rekha-Latency-Ms"</span>] = str(round(result.total_overhead_latency_ms, <span class="c-num">2</span>))
+    response.headers[<span class="c-st">"X-Rekha-Source"</span>] = result.source
+    
+    <span class="c-kw">if</span> result.source == <span class="c-st">"BLOCKED_GUARD"</span>:
+        <span class="c-kw">raise</span> <span class="c-fn">HTTPException</span>(status_code=<span class="c-num">400</span>, detail=result.final_output)
+
+    <span class="c-kw">return</span> {
+        <span class="c-st">"response"</span>: result.final_output,
+        <span class="c-st">"source"</span>: result.source,
+        <span class="c-st">"tokens_pruned"</span>: result.optimizer.pruning_ratio <span class="c-kw">if</span> result.optimizer <span class="c-kw">else</span> <span class="c-num">0.0</span>
+    }</code></pre>
+          </div>
+        </div>
+
+        <!-- TAB CONTENT: OPENAI RAW -->
+        <div id="content-openai" class="space-y-4 hidden">
+          <p class="text-xs text-neutral-400">
+            Using Rekha directly with official OpenAI or Anthropic Python clients.
+          </p>
+          <div class="bg-[#0A0A0A] border border-[#222222] rounded-lg p-5 font-mono text-xs overflow-x-auto leading-relaxed">
+            <div class="flex items-center justify-between text-neutral-500 pb-2 mb-3 border-b border-[#1A1A1A]">
+              <span>raw_openai_rekha.py</span>
+              <button onclick="copySnippet(codeOpenAI)" class="text-neutral-400 hover:text-white transition-colors flex items-center gap-1 text-[11px]">
+                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                <span>Copy</span>
+              </button>
+            </div>
+<pre class="text-neutral-300"><code><span class="c-kw">from</span> openai <span class="c-kw">import</span> OpenAI
+<span class="c-kw">from</span> rekha <span class="c-kw">import</span> RekhaGateway
+
+client = <span class="c-fn">OpenAI</span>()
+gateway = <span class="c-fn">RekhaGateway</span>()
+
+<span class="c-dec">@gateway.protect</span>
+<span class="c-kw">def</span> <span class="c-fn">generate_answer</span>(query: <span class="c-kw">str</span>):
+    context = fetch_documents_from_disk(query)
+    completion = client.chat.completions.<span class="c-fn">create</span>(
+        model=<span class="c-st">"gpt-4o-mini"</span>,
+        messages=[
+            {<span class="c-st">"role"</span>: <span class="c-st">"system"</span>, <span class="c-st">"content"</span>: f<span class="c-st">"Context:\n{context}"</span>},
+            {<span class="c-st">"role"</span>: <span class="c-st">"user"</span>, <span class="c-st">"content"</span>: query}
+        ]
+    )
+    <span class="c-kw">return</span> completion.choices[<span class="c-num">0</span>].message.content, context</code></pre>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- SECTION 06: DEEP-DIVE BY LAYER -->
+      <section id="layers" class="mb-16 border-t border-[#1A1A1A] pt-12">
+        <div class="text-[10px] font-mono uppercase tracking-widest text-neutral-500 mb-1">Configuration Reference</div>
+        <h2 class="text-2xl font-semibold text-white tracking-tight mb-6">The 5 Control Layers in Detail</h2>
+
+        <!-- Layer 1: Inbound Guard -->
+        <div id="layer-guard" class="mb-12 border border-[#1F1F1F] bg-[#0A0A0A] rounded-lg p-6">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-[10px] font-mono text-neutral-400 bg-neutral-900 border border-neutral-800 px-2 py-0.5 rounded">STAGE 01</span>
+            <span class="text-xs font-mono text-emerald-400">~37 ms</span>
+          </div>
+          <h3 class="text-lg font-semibold text-white tracking-tight mb-2">Layer 1: Inbound Guard Gate</h3>
+          <p class="text-xs sm:text-sm text-neutral-400 leading-relaxed mb-4">
+            Evaluates raw queries against jailbreak attacks, prompt leaks, and sensitive PII prior to any database lookups.
+          </p>
+          <div class="bg-black border border-neutral-800/80 rounded p-4 font-mono text-xs text-neutral-300 mb-4 overflow-x-auto">
+<pre><code><span class="c-cm"># Customizing Guard Gate</span>
+gateway.guard.injection_confidence_threshold = <span class="c-num">0.85</span>
+gateway.guard.add_custom_pii_pattern(
+    pattern_name=<span class="c-st">"INTERNAL_BADGE_ID"</span>,
+    regex_pattern=r<span class="c-st">"EMP-[0-9]{6}"</span>
+)</code></pre>
+          </div>
+          <ul class="text-xs text-neutral-400 space-y-1.5 list-disc pl-5">
+            <li><b>Deterministic Regex Sanitization:</b> Masks credit cards, SSNs, and bearer tokens before pipeline execution.</li>
+            <li><b>Non-Autoregressive Safety Classification:</b> Immunized against generative prompt injection tricks.</li>
+          </ul>
+        </div>
+
+        <!-- Layer 2: Smriti Cache -->
+        <div id="layer-smriti" class="mb-12 border border-[#1F1F1F] bg-[#0A0A0A] rounded-lg p-6">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-[10px] font-mono text-neutral-400 bg-neutral-900 border border-neutral-800 px-2 py-0.5 rounded">STAGE 02</span>
+            <span class="text-xs font-mono text-blue-400">&lt;5 ms (Hit) / ~35 ms (Miss)</span>
+          </div>
+          <h3 class="text-lg font-semibold text-white tracking-tight mb-2">Layer 2: Smriti Gate (Intent Cache)</h3>
+          <p class="text-xs sm:text-sm text-neutral-400 leading-relaxed mb-4">
+            Pre-emptively returns authoritative answers for canonical enterprise FAQ queries, skipping all vector DB and LLM inference.
+          </p>
+          <div class="bg-black border border-neutral-800/80 rounded p-4 font-mono text-xs text-neutral-300 mb-4 overflow-x-auto">
+<pre><code><span class="c-cm"># Pre-registering canonical organizational FAQ intents</span>
+gateway.<span class="c-fn">register_canonical_faq</span>(
+    intent_id=<span class="c-st">"enterprise_billing_sla"</span>,
+    description=<span class="c-st">"Inquiries regarding payment terms, billing cycle, or net-30 invoices."</span>,
+    verified_answer=<span class="c-st">"Enterprise invoices are issued Net-30 on the 1st of each calendar month."</span>
+)</code></pre>
+          </div>
+          <p class="text-xs text-neutral-400">
+            <b>Advantage over Naive Cosine Cache:</b> Standard cosine caches drift and cause false positive cache hits. Smriti uses discrete intent cluster centers with adaptive confidence bounds.
+          </p>
+        </div>
+
+        <!-- Layer 3: Disha Router -->
+        <div id="layer-disha" class="mb-12 border border-[#1F1F1F] bg-[#0A0A0A] rounded-lg p-6">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-[10px] font-mono text-neutral-400 bg-neutral-900 border border-neutral-800 px-2 py-0.5 rounded">STAGE 03</span>
+            <span class="text-xs font-mono text-purple-400">~38 ms</span>
+          </div>
+          <h3 class="text-lg font-semibold text-white tracking-tight mb-2">Layer 3: Disha Router (Query Dispatch)</h3>
+          <p class="text-xs sm:text-sm text-neutral-400 leading-relaxed mb-4">
+            Dispatches queries to one of three pathways: <code class="text-white">BYPASS_NO_RAG</code> (conversational greetings), <code class="text-white">STRUCTURED_TOOL</code> (SQL/Analytics), or <code class="text-white">VECTOR_SEARCH</code>.
+          </p>
+          <div class="bg-black border border-neutral-800/80 rounded p-4 font-mono text-xs text-neutral-300 mb-4 overflow-x-auto">
+<pre><code><span class="c-cm"># Returns typed RoutingDecision in sub-38ms</span>
+decision = gateway.router.<span class="c-fn">evaluate</span>(<span class="c-st">"How many units did we sell in Q3?"</span>)
+<span class="c-fn">print</span>(decision.destination)       <span class="c-cm"># "STRUCTURED_TOOL"</span>
+<span class="c-fn">print</span>(decision.target_namespace)  <span class="c-cm"># "sql_sales_ledger"</span></code></pre>
+          </div>
+        </div>
+
+        <!-- Layer 4: Samkshep Slicer -->
+        <div id="layer-samkshep" class="mb-12 border border-[#1F1F1F] bg-[#0A0A0A] rounded-lg p-6">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-[10px] font-mono text-neutral-400 bg-neutral-900 border border-neutral-800 px-2 py-0.5 rounded">STAGE 04</span>
+            <span class="text-xs font-mono text-emerald-400">~69 ms (Prunes 54%)</span>
+          </div>
+          <h3 class="text-lg font-semibold text-white tracking-tight mb-2">Layer 4: Samkshep Slicer (Context Optimizer)</h3>
+          <p class="text-xs sm:text-sm text-neutral-400 leading-relaxed mb-4">
+            Micro-slices retrieved chunks into atomic semantic sentences, scores them in parallel, and packs the highest-signal units into your token budget while preserving exact document reading order.
+          </p>
+          <div class="bg-black border border-neutral-800/80 rounded p-4 font-mono text-xs text-neutral-300 mb-4 overflow-x-auto">
+<pre><code><span class="c-cm"># Syntax-aware micro-slicing protects tables & code blocks</span>
+opt_res = gateway.optimizer.<span class="c-fn">optimize</span>(
+    query=<span class="c-st">"What are the interest rate bounds?"</span>,
+    documents=raw_rag_chunks,
+    target_reduction=<span class="c-num">0.60</span>  <span class="c-cm"># Prunes 60% of noise tokens</span>
+)
+<span class="c-fn">print</span>(opt_res.stats.original_tokens)   <span class="c-cm"># 4,200</span>
+<span class="c-fn">print</span>(opt_res.stats.optimized_tokens)  <span class="c-cm"># 1,680</span></code></pre>
+          </div>
+          <p class="text-xs text-neutral-400">
+            <b>Zero Token-Amputation:</b> Unlike token-dropping methods that amputate parentheses or negation words (causing inverted answers), Samkshep operates on grammar-complete sentence boundaries.
+          </p>
+        </div>
+
+        <!-- Layer 5: Satya Praman -->
+        <div id="layer-satya" class="mb-12 border border-[#1F1F1F] bg-[#0A0A0A] rounded-lg p-6">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-[10px] font-mono text-neutral-400 bg-neutral-900 border border-neutral-800 px-2 py-0.5 rounded">STAGE 05</span>
+            <span class="text-xs font-mono text-emerald-400">~72 ms</span>
+          </div>
+          <h3 class="text-lg font-semibold text-white tracking-tight mb-2">Layer 5: Satya Praman (Outbound Grounding)</h3>
+          <p class="text-xs sm:text-sm text-neutral-400 leading-relaxed mb-4">
+            Audits the synthesized answer before it reaches the user. Performs exact regex entity anchor verification (checking that every dollar amount, date, or percentage in the answer exists in the source text) and enforces negative policy constraints.
+          </p>
+          <div class="bg-black border border-neutral-800/80 rounded p-4 font-mono text-xs text-neutral-300 mb-4 overflow-x-auto">
+<pre><code><span class="c-cm"># Verification returns typed decision</span>
+ver_res = gateway.verifier.<span class="c-fn">verify</span>(
+    query=<span class="c-st">"What is the annual SLA warranty?"</span>,
+    reference_context=retrieved_context,
+    generated_answer=llm_answer,
+    negative_constraints=[<span class="c-st">"Never promise 100% uptime"</span>]
+)
+
+<span class="c-kw">if</span> ver_res.decision == <span class="c-st">"BLOCK_AND_FALLBACK"</span>:
+    <span class="c-fn">print</span>(<span class="c-st">"Violation detected:"</span>, ver_res.fallback_message)</code></pre>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- SECTION 07: AIR-GAPPED DOCKER & KUBERNETES -->
+      <section id="airgap-docker" class="mb-16 border-t border-[#1A1A1A] pt-12">
+        <div class="text-[10px] font-mono uppercase tracking-widest text-neutral-500 mb-1">Production Deployment</div>
+        <h2 class="text-2xl font-semibold text-white tracking-tight mb-3">Air-Gapped Dockerfile</h2>
+        <p class="text-sm text-neutral-400 mb-6">
+          For enterprise VPCs with zero outbound internet access, pre-bake the local model weights into your container image during your CI build step.
+        </p>
+
+        <div class="relative bg-[#0A0A0A] border border-[#222222] rounded-lg p-5 font-mono text-xs mb-6 overflow-x-auto leading-relaxed">
+          <div class="flex items-center justify-between text-neutral-500 pb-2 mb-3 border-b border-[#1A1A1A]">
+            <span>Dockerfile</span>
+            <button onclick="copySnippet(codeDockerfile)" class="text-neutral-400 hover:text-white transition-colors flex items-center gap-1 text-[11px]">
+              <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+              <span>Copy</span>
+            </button>
+          </div>
+<pre class="text-neutral-300"><code><span class="c-kw">FROM</span> python:3.10-slim
+
+<span class="c-kw">WORKDIR</span> /app
+
+<span class="c-cm"># Install dependencies</span>
+<span class="c-kw">RUN</span> pip install --no-cache-dir minelabs-rekha fastapi uvicorn
+
+<span class="c-cm"># Pre-cache local weights into image during build</span>
+<span class="c-kw">ENV</span> REKHA_OFFLINE_MODE=1
+<span class="c-kw">RUN</span> python -c "from rekha import RekhaGateway; RekhaGateway()"
+
+<span class="c-cm"># Copy application code</span>
+<span class="c-kw">COPY</span> . /app
+
+<span class="c-cm"># Run air-gapped without external network access</span>
+<span class="c-kw">EXPOSE</span> 8000
+<span class="c-kw">CMD</span> ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]</code></pre>
+        </div>
+      </section>
+
+      <!-- SECTION 08: OBSERVABILITY & HEADERS -->
+      <section id="observability" class="mb-16 border-t border-[#1A1A1A] pt-12">
+        <div class="text-[10px] font-mono uppercase tracking-widest text-neutral-500 mb-1">Observability</div>
+        <h2 class="text-2xl font-semibold text-white tracking-tight mb-3">Telemetry & HTTP Headers</h2>
+        <p class="text-sm text-neutral-400 mb-6">
+          Every execution of <code class="text-white">gateway.execute(...)</code> returns structured Pydantic metrics ready to attach to API responses or emit into Datadog, Prometheus, or OpenTelemetry.
+        </p>
+
+        <div class="border border-[#1F1F1F] bg-[#0A0A0A] rounded-lg overflow-hidden mb-6 text-xs font-mono">
+          <table class="w-full text-left">
+            <thead class="bg-[#121212] border-b border-[#1F1F1F] text-neutral-400">
+              <tr>
+                <th class="p-3 font-semibold">Header / Attribute</th>
+                <th class="p-3 font-semibold">Type</th>
+                <th class="p-3 font-semibold">Example Value</th>
+                <th class="p-3 font-semibold">Description</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-[#181818] text-neutral-300">
+              <tr>
+                <td class="p-3 text-pink-400">total_overhead_latency_ms</td>
+                <td class="p-3 text-neutral-500">float</td>
+                <td class="p-3 text-white">182.4</td>
+                <td class="p-3 text-neutral-400">Total cumulative Rekha gating latency across all 5 stages.</td>
+              </tr>
+              <tr>
+                <td class="p-3 text-pink-400">source</td>
+                <td class="p-3 text-neutral-500">str</td>
+                <td class="p-3 text-white">"RAG_VERIFIED"</td>
+                <td class="p-3 text-neutral-400">Execution source: CACHE, BLOCKED_GUARD, RAG_VERIFIED, or RAG_FALLBACK.</td>
+              </tr>
+              <tr>
+                <td class="p-3 text-pink-400">optimizer.pruning_ratio</td>
+                <td class="p-3 text-neutral-500">float</td>
+                <td class="p-3 text-emerald-400">0.548</td>
+                <td class="p-3 text-neutral-400">Fraction of context noise pruned (e.g. 54.8% tokens saved).</td>
+              </tr>
+              <tr>
+                <td class="p-3 text-pink-400">verifier.entity_matches</td>
+                <td class="p-3 text-neutral-500">list</td>
+                <td class="p-3 text-white">[{entity: "$250", verified: true}]</td>
+                <td class="p-3 text-neutral-400">Extracted numerical/date entity anchor validation results.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- SECTION 09: API REFERENCE & SCHEMAS -->
+      <section id="api-reference" class="mb-20 border-t border-[#1A1A1A] pt-12">
+        <div class="text-[10px] font-mono uppercase tracking-widest text-neutral-500 mb-1">Contract Specification</div>
+        <h2 class="text-2xl font-semibold text-white tracking-tight mb-3">API Reference: RekhaGateway</h2>
+        <p class="text-sm text-neutral-400 mb-6">
+          Core class signature and initialization arguments in <code class="text-blue-400 font-mono">rekha.gateway</code>.
+        </p>
+
+        <div class="bg-[#0A0A0A] border border-[#222222] rounded-lg p-5 font-mono text-xs mb-6 overflow-x-auto leading-relaxed">
+<pre class="text-neutral-300"><code><span class="c-kw">class</span> <span class="c-cls">RekhaGateway</span>:
+    <span class="c-kw">def</span> <span class="c-fn">__init__</span>(
+        self,
+        enable_guard: <span class="c-kw">bool</span> = <span class="c-num">True</span>,
+        enable_cache: <span class="c-kw">bool</span> = <span class="c-num">True</span>,
+        enable_router: <span class="c-kw">bool</span> = <span class="c-num">True</span>,
+        enable_optimizer: <span class="c-kw">bool</span> = <span class="c-num">True</span>,
+        enable_verifier: <span class="c-kw">bool</span> = <span class="c-num">True</span>,
+        negative_constraints: <span class="c-kw">Optional</span>[List[<span class="c-kw">str</span>]] = <span class="c-num">None</span>,
+        target_context_reduction: <span class="c-kw">float</span> = <span class="c-num">0.50</span>
+    ):
+        ...</code></pre>
+        </div>
+
+        <div class="border border-[#1F1F1F] bg-[#0A0A0A] rounded-lg p-5 text-xs text-neutral-400 space-y-2">
+          <div class="font-semibold text-white mb-2 font-mono">Methods:</div>
+          <div><code class="text-emerald-400 font-mono">protect(func)</code>: Decorator wrapping an existing RAG function taking <code class="text-neutral-300">(query)</code> and returning <code class="text-neutral-300">(answer, raw_context)</code>.</div>
+          <div><code class="text-emerald-400 font-mono">execute(query, rag_executor)</code>: Functional execution passing query through all 5 layers with complete typed result return.</div>
+          <div><code class="text-emerald-400 font-mono">register_canonical_faq(intent_id, description, verified_answer)</code>: Registers intent cluster for sub-5ms cache bypass.</div>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- RIGHT SIDEBAR: STICKY "ON THIS PAGE" TOC (Desktop) -->
+    <aside class="w-56 flex-shrink-0 py-8 pl-8 hidden lg:block sticky top-14 h-[calc(100vh-3.5rem)] overflow-y-auto text-xs font-mono">
+      <div class="text-[10px] font-semibold uppercase tracking-wider text-neutral-500 mb-3">
+        On this page
+      </div>
+      <ul class="space-y-2 text-neutral-500" id="tocLinks">
+        <li><a href="#overview" class="hover:text-white transition-colors block">Overview & Mental Model</a></li>
+        <li><a href="#installation" class="hover:text-white transition-colors block">Installation & Weights</a></li>
+        <li><a href="#quickstart" class="hover:text-white transition-colors block">60-Second Quickstart</a></li>
+        <li><a href="#latency-math" class="hover:text-white transition-colors block">The Latency Paradox</a></li>
+        <li><a href="#cookbook" class="hover:text-white transition-colors block">Framework Cookbook</a></li>
+        <li><a href="#layers" class="hover:text-white transition-colors block">The 5 Control Layers</a></li>
+        <li><a href="#layer-guard" class="pl-2.5 hover:text-white transition-colors block text-[11px]">→ 01. Inbound Guard</a></li>
+        <li><a href="#layer-smriti" class="pl-2.5 hover:text-white transition-colors block text-[11px]">→ 02. Smriti Cache</a></li>
+        <li><a href="#layer-disha" class="pl-2.5 hover:text-white transition-colors block text-[11px]">→ 03. Disha Router</a></li>
+        <li><a href="#layer-samkshep" class="pl-2.5 hover:text-white transition-colors block text-[11px]">→ 04. Samkshep Slicer</a></li>
+        <li><a href="#layer-satya" class="pl-2.5 hover:text-white transition-colors block text-[11px]">→ 05. Satya Praman</a></li>
+        <li><a href="#airgap-docker" class="hover:text-white transition-colors block">Air-Gapped Dockerfile</a></li>
+        <li><a href="#observability" class="hover:text-white transition-colors block">Telemetry & Headers</a></li>
+        <li><a href="#api-reference" class="hover:text-white transition-colors block">API Reference</a></li>
+      </ul>
+
+      <!-- Community Box -->
+      <div class="mt-10 p-3.5 rounded border border-[#1A1A1A] bg-[#0A0A0A] space-y-2">
+        <div class="text-[10px] text-neutral-400 font-semibold uppercase">Open Source</div>
+        <p class="text-[11px] text-neutral-500 leading-normal">
+          Licensed under Apache-2.0. Air-gapped, zero telemetry.
+        </p>
+        <a href="https://github.com/MineLabs/Rekha" target="_blank" class="inline-block text-[11px] text-white hover:underline mt-1">
+          GitHub Repository →
+        </a>
+      </div>
+    </aside>
+
+  </div>
+
+  <!-- FOOTER -->
+  <footer class="border-t border-[#1A1A1A] py-8 text-xs font-mono text-neutral-500 bg-black">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div>
+        Rekha &copy; 2026 Mine Labs. Released under Apache-2.0.
+      </div>
+      <div class="flex items-center gap-6">
+        <a href="index.html" class="hover:text-white transition-colors">Overview</a>
+        <a href="#overview" class="hover:text-white transition-colors">Back to Top ↑</a>
+        <a href="https://github.com/MineLabs/Rekha" target="_blank" class="hover:text-white transition-colors">GitHub</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- SCRIPT ENGINE -->
+  <script>
+    // Copy Snippet Helper
+    function copySnippet(text) {
+      navigator.clipboard.writeText(text).then(() => {
+        alert("Code snippet copied to clipboard!");
+      }).catch(err => {
+        console.error("Copy failed", err);
+      });
+    }
+
+    // Code constants for copying
+    const quickstartCodeSnippet = `import openai\nfrom rekha import RekhaGateway\n\ngateway = RekhaGateway(target_context_reduction=0.50)\n\n@gateway.protect\ndef query_support_rag(query: str):\n    docs = vector_store.search(query, top_k=5)\n    raw_context = "\\n\\n".join([d.text for d in docs])\n    response = openai.chat.completions.create(\n        model="gpt-4o",\n        messages=[\n            {"role": "system", "content": f"Answer strictly using:\\n{raw_context}"},\n            {"role": "user", "content": query}\n        ]\n    )\n    return response.choices[0].message.content, raw_context\n\nresult = query_support_rag("What are our SLA response times for Tier-1 outages?")\nprint("Final Output:", result.final_output)`;
+
+    const codeLangchain = `from langchain_core.runnables import RunnableLambda\nfrom langchain_openai import ChatOpenAI\nfrom rekha import RekhaGateway\n\ngateway = RekhaGateway(target_context_reduction=0.55)\nllm = ChatOpenAI(model="gpt-4o", temperature=0)\n\n@gateway.protect\ndef run_langchain_pipeline(query: str):\n    docs = retriever.get_relevant_documents(query)\n    context_str = "\\n\\n".join([d.page_content for d in docs])\n    prompt = f"Context:\\n{context_str}\\n\\nQuestion: {query}"\n    response = llm.invoke(prompt)\n    return response.content, context_str`;
+
+    const codeLlamaIndex = `from llama_index.core import VectorStoreIndex\nfrom rekha import RekhaGateway\n\ngateway = RekhaGateway()\nquery_engine = index.as_query_engine(similarity_top_k=6)\n\n@gateway.protect\ndef llamaindex_query(query_text: str):\n    response = query_engine.query(query_text)\n    context = "\\n\\n".join([n.node.get_content() for n in response.source_nodes])\n    return str(response), context`;
+
+    const codeFastAPI = `from fastapi import FastAPI, HTTPException, Response\nfrom pydantic import BaseModel\nfrom rekha import RekhaGateway\n\napp = FastAPI(title="Enterprise RAG Service")\ngateway = RekhaGateway()\n\nclass ChatRequest(BaseModel):\n    query: str\n\n@app.post("/v1/chat")\nasync def chat_endpoint(req: ChatRequest, response: Response):\n    result = gateway.execute(query=req.query, rag_executor=my_internal_rag_worker)\n    response.headers["X-Rekha-Latency-Ms"] = str(round(result.total_overhead_latency_ms, 2))\n    response.headers["X-Rekha-Source"] = result.source\n    if result.source == "BLOCKED_GUARD":\n        raise HTTPException(status_code=400, detail=result.final_output)\n    return {"response": result.final_output, "source": result.source}`;
+
+    const codeOpenAI = `from openai import OpenAI\nfrom rekha import RekhaGateway\n\nclient = OpenAI()\ngateway = RekhaGateway()\n\n@gateway.protect\ndef generate_answer(query: str):\n    context = fetch_documents_from_disk(query)\n    completion = client.chat.completions.create(\n        model="gpt-4o-mini",\n        messages=[\n            {"role": "system", "content": f"Context:\\n{context}"},\n            {"role": "user", "content": query}\n        ]\n    )\n    return completion.choices[0].message.content, context`;
+
+    const codeDockerfile = `FROM python:3.10-slim\nWORKDIR /app\nRUN pip install --no-cache-dir minelabs-rekha fastapi uvicorn\nENV REKHA_OFFLINE_MODE=1\nRUN python -c "from rekha import RekhaGateway; RekhaGateway()"\nCOPY . /app\nEXPOSE 8000\nCMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]`;
+
+    // Interactive Framework Tabs
+    function switchTab(framework) {
+      const tabs = ['langchain', 'llamaindex', 'fastapi', 'openai'];
+      tabs.forEach(t => {
+        const btn = document.getElementById(`tab-${t}`);
+        const content = document.getElementById(`content-${t}`);
+        if (t === framework) {
+          btn.className = "px-4 py-2 border-b-2 border-white text-white font-medium transition-colors";
+          content.classList.remove('hidden');
+        } else {
+          btn.className = "px-4 py-2 border-b-2 border-transparent text-neutral-400 hover:text-white transition-colors";
+          content.classList.add('hidden');
+        }
+      });
+    }
+
+    // Live Sidebar Search Filtering
+    function handleSearch(query) {
+      const q = query.toLowerCase().trim();
+      const navLinks = document.querySelectorAll('#sidebarNav .nav-item');
+      navLinks.forEach(link => {
+        const text = link.innerText.toLowerCase();
+        if (!q || text.includes(q)) {
+          link.parentElement.style.display = 'block';
+        } else {
+          link.parentElement.style.display = 'none';
+        }
+      });
+    }
+
+    // Global Key Listener for Ctrl+K
+    window.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        const searchInput = document.getElementById('docSearch');
+        if (searchInput) searchInput.focus();
+      }
+    });
+
+    // Scroll spy for TOC
+    window.addEventListener('scroll', () => {
+      const sections = document.querySelectorAll('section[id], div[id^="layer-"]');
+      const scrollPos = window.scrollY + 100;
+      let currentId = '';
+
+      sections.forEach(sec => {
+        if (sec.offsetTop <= scrollPos) {
+          currentId = sec.id;
+        }
+      });
+
+      if (currentId) {
+        document.querySelectorAll('#tocLinks a').forEach(a => {
+          if (a.getAttribute('href') === `#${currentId}`) {
+            a.className = 'toc-active text-white transition-colors block';
+          } else {
+            a.className = 'text-neutral-500 hover:text-white transition-colors block';
+          }
+        });
+      }
+    });
+  </script>
+</body>
+</html>

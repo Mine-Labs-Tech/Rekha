@@ -1,0 +1,898 @@
+<!DOCTYPE html>
+<html lang="en" class="dark scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rekha — Draw a Rekha Around Your Production RAG</title>
+  <meta name="description" content="Draw a Rekha around your production RAG. Sub-35ms non-autoregressive decision boundary for prompt injections, token pruning, and hallucination audits.">
+
+  <!-- Typography: Inter & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      background-color: #000000;
+      color: #EDEDED;
+      font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+      -webkit-font-smoothing: antialiased;
+    }
+    
+    ::selection {
+      background: #27272A;
+      color: #FFFFFF;
+    }
+
+    /* Subtle hairline structural grid */
+    .bg-grid {
+      background-size: 40px 40px;
+      background-image: linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+                        linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+    }
+
+    /* Minimalist precision scrollbars */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: #000000; }
+    ::-webkit-scrollbar-thumb { background: #262626; border-radius: 2px; }
+    ::-webkit-scrollbar-thumb:hover { background: #404040; }
+
+    /* Code tokens */
+    .c-kw { color: #F472B6; font-weight: 500; }
+    .c-fn { color: #60A5FA; }
+    .c-st { color: #34D399; }
+    .c-cm { color: #52525B; font-style: italic; }
+    .c-num { color: #FBBF24; }
+    .c-dec { color: #A78BFA; font-weight: 600; }
+  </style>
+</head>
+
+<body class="bg-black text-[#EDEDED] font-sans antialiased min-h-screen relative flex flex-col justify-between">
+
+  <!-- Structural background grid -->
+  <div class="fixed inset-0 pointer-events-none bg-grid z-0 opacity-70"></div>
+  <div class="fixed inset-0 pointer-events-none bg-gradient-to-b from-transparent via-black/60 to-black z-0"></div>
+
+  <!-- NAVIGATION BAR -->
+  <nav class="sticky top-0 z-50 w-full border-b border-[#1A1A1A] bg-black/85 backdrop-blur-md">
+    <div class="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
+      
+      <!-- Brand Logo -->
+      <a href="#" class="flex items-center gap-2.5">
+        <div class="w-6 h-6 rounded bg-white text-black flex items-center justify-center font-mono font-bold text-xs tracking-tight shadow-sm">
+          R
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="font-semibold text-white tracking-tight text-sm">Rekha</span>
+          <span class="text-[10px] font-mono text-neutral-400 bg-neutral-900 border border-neutral-800 px-1.5 py-0.5 rounded">v0.1.0</span>
+        </div>
+      </a>
+
+      <!-- Navigation Links -->
+      <div class="hidden md:flex items-center gap-7 text-xs text-neutral-400">
+        <a href="#problem" class="hover:text-white transition-colors">The RAG Gap</a>
+        <a href="#pipeline" class="hover:text-white transition-colors">5-Layer Engine</a>
+        <a href="#code" class="hover:text-white transition-colors">1-Line Setup</a>
+        <a href="#paradox" class="hover:text-white transition-colors">Latency Paradox</a>
+        <a href="#matrix" class="hover:text-white transition-colors">vs Alternatives</a>
+        <a href="docs.html" class="text-white hover:text-neutral-300 font-medium transition-colors flex items-center gap-1.5">
+          <span>Docs & Recipes</span>
+          <span class="text-[9px] font-mono bg-neutral-900 border border-neutral-700 text-emerald-400 px-1 py-0.2 rounded">NEW</span>
+        </a>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="flex items-center gap-3">
+        <a href="https://github.com/MineLabs/Rekha" target="_blank" class="hidden sm:flex items-center gap-1.5 text-xs text-neutral-300 hover:text-white bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 px-2.5 py-1 rounded transition-colors font-mono">
+          <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+          <span>Star</span>
+        </a>
+        <a href="docs.html" class="text-xs font-medium text-black bg-white hover:bg-neutral-200 px-3 py-1 rounded transition-colors">
+          Documentation →
+        </a>
+      </div>
+
+    </div>
+  </nav>
+
+  <!-- HERO SECTION -->
+  <main class="relative z-10">
+    <section class="max-w-4xl mx-auto px-6 pt-24 pb-20">
+      
+      <!-- Eyebrow -->
+      <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-neutral-800 bg-[#0C0C0C] text-xs font-mono text-neutral-400 mb-6">
+        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+        <span class="text-white font-medium">Rekha Control Plane</span>
+        <span class="text-neutral-600">/</span>
+        <span>Sub-35ms • Apache-2.0 • 0 API Keys</span>
+      </div>
+
+      <!-- Main Headline: "Draw a Rekha around your production RAG" -->
+      <h1 class="text-4xl sm:text-6xl font-semibold tracking-[-0.04em] text-white leading-[1.08] mb-6">
+        Draw a <span class="text-white underline decoration-neutral-700 decoration-1 underline-offset-8">Rekha</span> around <br class="hidden sm:inline" />
+        your production RAG.
+      </h1>
+
+      <!-- Subhead -->
+      <p class="text-base sm:text-lg text-neutral-400 max-w-2xl font-normal leading-relaxed mb-8">
+        Rekha provides a <b>sub-35ms non-autoregressive decision boundary</b> around your retrieval pipeline. It intercepts prompt injections, prunes 50%+ context noise with <b>Samkshep</b> slicing, and audits hallucinations with <b>Satya Praman</b>—requiring zero external API keys.
+      </p>
+
+      <!-- Quick Install Row -->
+      <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 mb-16">
+        <div class="flex items-center justify-between bg-[#0A0A0A] border border-[#222222] hover:border-[#333333] transition-colors rounded-md px-3.5 py-2 font-mono text-xs">
+          <div class="flex items-center gap-2.5 mr-6">
+            <span class="text-neutral-500 select-none">$</span>
+            <span class="text-neutral-200">pip install minelabs-rekha</span>
+          </div>
+          <button onclick="copyCommand()" id="copyBtn" class="text-neutral-400 hover:text-white transition-colors text-xs flex items-center gap-1">
+            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+            <span id="copyLabel">Copy</span>
+          </button>
+        </div>
+
+        <a href="#pipeline" class="text-center px-4 py-2 rounded-md bg-neutral-900 hover:bg-neutral-800 text-xs font-medium text-neutral-200 border border-neutral-800 transition-all">
+          Inspect 5-Layer Engine
+        </a>
+
+        <a href="docs.html" class="text-center px-4 py-2 rounded-md bg-white hover:bg-neutral-200 text-xs font-medium text-black transition-colors">
+          Cookbook & Docs →
+        </a>
+      </div>
+
+      <!-- Core Telemetry Metric Grid -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-px bg-[#1F1F1F] rounded-lg overflow-hidden border border-[#1F1F1F]">
+        <div class="bg-black p-5 space-y-1">
+          <div class="text-[10px] font-mono text-neutral-500 uppercase tracking-wider">Gating Speed</div>
+          <div class="text-xl font-semibold text-white tracking-tight font-mono">~35 ms</div>
+          <div class="text-[11px] text-neutral-400">Non-autoregressive ModernBERT</div>
+        </div>
+
+        <div class="bg-black p-5 space-y-1">
+          <div class="text-[10px] font-mono text-neutral-500 uppercase tracking-wider">Samkshep Pruning</div>
+          <div class="text-xl font-semibold text-white tracking-tight font-mono">54.2%</div>
+          <div class="text-[11px] text-neutral-400">Preserves Markdown tables & JSON</div>
+        </div>
+
+        <div class="bg-black p-5 space-y-1">
+          <div class="text-[10px] font-mono text-neutral-500 uppercase tracking-wider">Setup Effort</div>
+          <div class="text-xl font-semibold text-white tracking-tight font-mono">1 Line</div>
+          <div class="text-[11px] text-neutral-400">Single Python <code class="text-pink-400">@gateway.protect</code></div>
+        </div>
+
+        <div class="bg-black p-5 space-y-1">
+          <div class="text-[10px] font-mono text-neutral-500 uppercase tracking-wider">Air-Gapped</div>
+          <div class="text-xl font-semibold text-white tracking-tight font-mono">0 Keys</div>
+          <div class="text-[11px] text-neutral-400">100% offline local runtime</div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- SECTION: THE RAG GAP (3 Structural Flaws) -->
+    <section id="problem" class="border-t border-[#1A1A1A] py-20 bg-[#040404]">
+      <div class="max-w-4xl mx-auto px-6">
+        
+        <div class="mb-10">
+          <div class="text-[10px] font-mono uppercase tracking-widest text-neutral-500 mb-1">The Architectural Dilemma</div>
+          <h2 class="text-2xl font-semibold text-white tracking-tight">The 3 Structural Flaws in Production RAG</h2>
+          <p class="text-xs sm:text-sm text-neutral-400 mt-1 max-w-xl">
+            Why wrapping a vector database with an LLM prompt fails in enterprise production environments.
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          
+          <div class="border border-[#1A1A1A] bg-[#0A0A0A] rounded-lg p-5 space-y-2.5">
+            <div class="w-6 h-6 rounded bg-neutral-900 border border-neutral-800 flex items-center justify-center font-mono text-xs text-neutral-400">01</div>
+            <h3 class="text-sm font-medium text-white">The Latency Trap of Guardrails</h3>
+            <p class="text-xs text-neutral-400 leading-relaxed">
+              Using a secondary LLM (like NeMo or GPT-4o) to police your primary LLM adds 2,500ms to 4,000ms of lag and doubles your monthly API invoice.
+            </p>
+          </div>
+
+          <div class="border border-[#1A1A1A] bg-[#0A0A0A] rounded-lg p-5 space-y-2.5">
+            <div class="w-6 h-6 rounded bg-neutral-900 border border-neutral-800 flex items-center justify-center font-mono text-xs text-neutral-400">02</div>
+            <h3 class="text-sm font-medium text-white">The Syntax Amputation Flaw</h3>
+            <p class="text-xs text-neutral-400 leading-relaxed">
+              Token-dropping compressors (like LLMLingua) delete characters by perplexity—destroying Markdown table columns, breaking JSON syntax, and dropping crucial words like <i>"not"</i>.
+            </p>
+          </div>
+
+          <div class="border border-[#1A1A1A] bg-[#0A0A0A] rounded-lg p-5 space-y-2.5">
+            <div class="w-6 h-6 rounded bg-neutral-900 border border-neutral-800 flex items-center justify-center font-mono text-xs text-neutral-400">03</div>
+            <h3 class="text-sm font-medium text-white">The Silent Hallucination Risk</h3>
+            <p class="text-xs text-neutral-400 leading-relaxed">
+              LLMs hallucinate critical numbers, pricing tiers, and dates when surrounded by noisy retrieved context. Offline evaluation frameworks (Ragas) cannot run in-flight on live user streams.
+            </p>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+    <!-- SECTION: THE 5-LAYER SANDWICH CONTROL PLANE (The Interactive 5-Card Stepper Grid) -->
+    <section id="pipeline" class="border-t border-[#1A1A1A] py-20 bg-[#050505]">
+      <div class="max-w-4xl mx-auto px-6">
+        
+        <!-- Header & Simulation Controls -->
+        <div class="mb-8 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+          <div>
+            <div class="text-[10px] font-mono uppercase tracking-widest text-neutral-500 mb-1">Systems Architecture</div>
+            <h2 class="text-2xl font-semibold text-white tracking-tight">The 5-Layer Sandwich Control Plane</h2>
+            <p class="text-xs sm:text-sm text-neutral-400 mt-1 max-w-xl">
+              Click any stage in the execution pipeline to inspect its decision boundary, latency profile, and live Pydantic v2 contract.
+            </p>
+          </div>
+
+          <!-- Quick Test Simulators -->
+          <div class="flex items-center gap-1.5 bg-black border border-neutral-800 rounded p-1 text-[11px] font-mono">
+            <span class="text-neutral-500 px-2 select-none">Simulate:</span>
+            <button onclick="runSimulation('attack')" class="px-2 py-0.5 rounded bg-neutral-900 hover:bg-neutral-800 text-neutral-300 hover:text-white transition-all cursor-pointer">
+              🛡️ Attack
+            </button>
+            <button onclick="runSimulation('cache')" class="px-2 py-0.5 rounded bg-neutral-900 hover:bg-neutral-800 text-neutral-300 hover:text-white transition-all cursor-pointer">
+              ⚡ Cache
+            </button>
+            <button onclick="runSimulation('standard')" class="px-2 py-0.5 rounded bg-neutral-900 hover:bg-neutral-800 text-neutral-300 hover:text-white transition-all cursor-pointer">
+              📄 Standard
+            </button>
+          </div>
+        </div>
+
+        <!-- 5-Stage Interactive Card Grid (Clickable Steppers) -->
+        <div class="grid grid-cols-2 sm:grid-cols-5 gap-2 mb-6">
+          
+          <button onclick="setLayer(1)" id="btn-1" class="text-left p-3.5 rounded-lg border bg-[#141414] border-neutral-400 transition-all cursor-pointer">
+            <div class="stage-idx text-[10px] font-mono text-neutral-400 uppercase">Stage 01</div>
+            <div class="stage-name text-xs font-semibold text-white mt-1">Inbound Guard</div>
+            <div class="stage-sub text-[10px] text-neutral-400">Security Gate</div>
+            <div class="stage-ms text-[11px] font-mono text-emerald-400 mt-2">~37 ms</div>
+          </button>
+
+          <button onclick="setLayer(2)" id="btn-2" class="text-left p-3.5 rounded-lg border bg-black border-neutral-800 hover:border-neutral-700 transition-all cursor-pointer">
+            <div class="stage-idx text-[10px] font-mono text-neutral-400 uppercase">Stage 02</div>
+            <div class="stage-name text-xs font-semibold text-neutral-300 mt-1">Smriti Gate</div>
+            <div class="stage-sub text-[10px] text-neutral-500">Intent Cache</div>
+            <div class="stage-ms text-[11px] font-mono text-neutral-500 mt-2">~35 ms</div>
+          </button>
+
+          <button onclick="setLayer(3)" id="btn-3" class="text-left p-3.5 rounded-lg border bg-black border-neutral-800 hover:border-neutral-700 transition-all cursor-pointer">
+            <div class="stage-idx text-[10px] font-mono text-neutral-400 uppercase">Stage 03</div>
+            <div class="stage-name text-xs font-semibold text-neutral-300 mt-1">Disha Router</div>
+            <div class="stage-sub text-[10px] text-neutral-500">Query Dispatch</div>
+            <div class="stage-ms text-[11px] font-mono text-neutral-500 mt-2">~38 ms</div>
+          </button>
+
+          <button onclick="setLayer(4)" id="btn-4" class="text-left p-3.5 rounded-lg border bg-black border-neutral-800 hover:border-neutral-700 transition-all cursor-pointer">
+            <div class="stage-idx text-[10px] font-mono text-neutral-400 uppercase">Stage 04</div>
+            <div class="stage-name text-xs font-semibold text-neutral-300 mt-1">Samkshep Slicer</div>
+            <div class="stage-sub text-[10px] text-neutral-500">Context Optimizer</div>
+            <div class="stage-ms text-[11px] font-mono text-neutral-500 mt-2">~69 ms</div>
+          </button>
+
+          <button onclick="setLayer(5)" id="btn-5" class="text-left p-3.5 rounded-lg border bg-black border-neutral-800 hover:border-neutral-700 transition-all cursor-pointer">
+            <div class="stage-idx text-[10px] font-mono text-neutral-400 uppercase">Stage 05</div>
+            <div class="stage-name text-xs font-semibold text-neutral-300 mt-1">Satya Praman</div>
+            <div class="stage-sub text-[10px] text-neutral-500">Grounding Audit</div>
+            <div class="stage-ms text-[11px] font-mono text-neutral-500 mt-2">~72 ms</div>
+          </button>
+
+        </div>
+
+        <!-- Stage Inspector Box -->
+        <div class="border border-[#1F1F1F] bg-[#0A0A0A] rounded-xl p-6 sm:p-8">
+          <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            
+            <!-- Left Info -->
+            <div class="lg:col-span-6 space-y-3.5">
+              <div class="flex items-center gap-2.5">
+                <span id="specStage" class="text-[10px] font-mono text-neutral-400 bg-neutral-900 border border-neutral-800 px-2 py-0.5 rounded">
+                  STAGE 01 OF 05
+                </span>
+                <span id="specConcept" class="text-[11px] font-mono text-blue-400 font-medium">
+                  Type: Inbound Security Gate
+                </span>
+              </div>
+
+              <h3 id="specTitle" class="text-xl font-semibold text-white tracking-tight">
+                Layer 1: Inbound Guard Gate
+              </h3>
+
+              <p id="specDesc" class="text-xs sm:text-sm text-neutral-400 leading-relaxed">
+                Evaluates incoming raw user queries against prompt injection vectors, system prompt extraction, jailbreaks, and sensitive PII before any vector database or LLM is queried.
+              </p>
+
+              <div class="border-t border-[#1C1C1C] pt-3.5">
+                <div class="text-[10px] font-mono uppercase text-neutral-500 mb-2">Architectural Rules:</div>
+                <ul id="specList" class="space-y-1.5 text-xs text-neutral-300">
+                  <li class="flex items-start gap-2">
+                    <span class="text-neutral-500 font-mono">01.</span>
+                    <span>Non-autoregressive binary classification avoids generative jailbreak vulnerabilities.</span>
+                  </li>
+                  <li class="flex items-start gap-2">
+                    <span class="text-neutral-500 font-mono">02.</span>
+                    <span>Deterministic regex engine scrubs API keys, bearer tokens, SSNs, credit cards, and emails.</span>
+                  </li>
+                  <li class="flex items-start gap-2">
+                    <span class="text-neutral-500 font-mono">03.</span>
+                    <span>Permits benign security inquiries while strictly filtering operational attacks.</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            <!-- Right JSON Payload Contract -->
+            <div class="lg:col-span-6 bg-black border border-[#1C1C1C] rounded-lg p-5 font-mono text-xs">
+              <div class="flex items-center justify-between pb-2.5 mb-2.5 border-b border-[#1A1A1A] text-neutral-500 text-[10px]">
+                <span id="specSchemaPath">rekha/guard.py → GuardResult</span>
+                <span id="specDecisionStatus" class="text-emerald-400 font-semibold font-mono">STATUS: PASS</span>
+              </div>
+              <pre id="specCodeBlock" class="text-neutral-300 leading-relaxed overflow-x-auto text-[11px]"><code>{
+  "is_safe": true,
+  "blocked_reason": null,
+  "sanitized_query": "What are the SLA terms for enterprise billing?",
+  "matched_rules": [],
+  "confidence": 0.994,
+  "execution_time_ms": 35.8
+}</code></pre>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- SECTION: ZERO FRICTION CODE INTEGRATION -->
+    <section id="code" class="border-t border-[#1A1A1A] py-20">
+      <div class="max-w-4xl mx-auto px-6">
+        
+        <div class="mb-10">
+          <div class="text-[10px] font-mono uppercase tracking-widest text-neutral-500 mb-1">Developer Ergonomics</div>
+          <h2 class="text-2xl font-semibold text-white tracking-tight">Zero Migration Friction</h2>
+          <p class="text-xs sm:text-sm text-neutral-400 mt-1 max-w-xl">
+            You do not rebuild vector embeddings, migrate clusters, or modify prompts. Adding Rekha is just one Python decorator: <code class="text-pink-400">@gateway.protect</code>.
+          </p>
+        </div>
+
+        <!-- Code Sandbox -->
+        <div class="border border-[#1F1F1F] bg-[#0A0A0A] rounded-lg overflow-hidden">
+          
+          <div class="flex items-center justify-between px-5 py-3 border-b border-[#1A1A1A] bg-[#080808]">
+            <div class="flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-neutral-600"></span>
+              <span class="text-xs font-mono text-neutral-400">rag_pipeline.py</span>
+            </div>
+            
+            <div class="flex items-center bg-black border border-neutral-800 rounded p-0.5 text-xs font-mono">
+              <button onclick="toggleCodeView('protected')" id="btnProtected" class="px-2.5 py-0.5 rounded bg-neutral-800 text-white font-medium transition-all">
+                Rekha Protected (1 Line)
+              </button>
+              <button onclick="toggleCodeView('traditional')" id="btnTraditional" class="px-2.5 py-0.5 rounded text-neutral-400 hover:text-white transition-all">
+                Traditional RAG
+              </button>
+            </div>
+          </div>
+
+          <div class="p-6 font-mono text-xs overflow-x-auto leading-relaxed text-neutral-300">
+            <pre id="codeDisplay"><code class="block"><span class="c-kw">import</span> openai
+<span class="c-kw">from</span> rekha <span class="c-kw">import</span> RekhaGateway        <span class="c-cm"># 1. Import Rekha</span>
+
+gateway = <span class="c-fn">RekhaGateway</span>()              <span class="c-cm"># 2. Local non-autoregressive weights (0 API keys)</span>
+
+<span class="c-dec">@gateway.protect</span>                      <span class="c-cm"># 3. Apply protection decorator</span>
+<span class="c-kw">def</span> <span class="c-fn">my_rag_pipeline</span>(user_query: <span class="c-kw">str</span>):
+    chunks = vector_db.<span class="c-fn">similarity_search</span>(user_query, k=<span class="c-num">5</span>)
+    context = <span class="c-st">"\n\n"</span>.<span class="c-fn">join</span>([c.page_content <span class="c-kw">for</span> c <span class="c-kw">in</span> chunks])
+    
+    <span class="c-cm"># Context is automatically sliced via Samkshep (54% token reduction)</span>
+    <span class="c-cm"># Injections are intercepted in ~35ms before reaching this line</span>
+    response = openai.chat.completions.<span class="c-fn">create</span>(
+        model=<span class="c-st">"gpt-4o"</span>,
+        messages=[
+            {<span class="c-st">"role"</span>: <span class="c-st">"system"</span>, <span class="c-st">"content"</span>: f<span class="c-st">"Answer based on:\n{context}"</span>},
+            {<span class="c-st">"role"</span>: <span class="c-st">"user"</span>, <span class="c-st">"content"</span>: user_query}
+        ]
+    )
+    <span class="c-cm"># Satya Praman verifies claims & numerical entities before stream</span>
+    <span class="c-kw">return</span> response.choices[<span class="c-num">0</span>].message.content, context</code></pre>
+          </div>
+
+          <div class="px-5 py-2.5 border-t border-[#1A1A1A] bg-[#080808] flex flex-wrap items-center justify-between text-[11px] font-mono text-neutral-400 gap-3">
+            <div class="flex items-center gap-4">
+              <span class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Inbound Guard: ~37ms</span>
+              <span class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Samkshep Slicing: -54% Tokens</span>
+              <span class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Satya Praman: ~72ms</span>
+            </div>
+            <span class="text-neutral-500">Zero Vector DB or Embedding Changes</span>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+    <!-- SECTION: THE LATENCY PARADOX CALCULATOR -->
+    <section id="paradox" class="border-t border-[#1A1A1A] py-20 bg-[#040404]">
+      <div class="max-w-4xl mx-auto px-6">
+        
+        <div class="mb-10">
+          <div class="text-[10px] font-mono uppercase tracking-widest text-neutral-500 mb-1">Systems Math</div>
+          <h2 class="text-2xl font-semibold text-white tracking-tight">The Latency Paradox</h2>
+          <p class="text-xs sm:text-sm text-neutral-400 mt-1 max-w-xl">
+            Why adding ~180ms of control plane overhead makes your RAG system <b>~620ms faster</b> overall.
+          </p>
+        </div>
+
+        <div class="border border-[#1F1F1F] bg-[#0A0A0A] rounded-lg p-6 space-y-6">
+          
+          <div>
+            <div class="flex justify-between items-center text-xs font-mono mb-2">
+              <span class="text-neutral-400">Retrieved Prompt Context Size:</span>
+              <span id="calcTokensLabel" class="text-white font-semibold">4,000 Tokens</span>
+            </div>
+            <input type="range" id="calcSlider" min="1000" max="10000" step="500" value="4000" oninput="updateParadox()" class="w-full h-1.5 bg-neutral-800 rounded-lg appearance-none cursor-pointer accent-white">
+            <div class="flex justify-between text-[10px] font-mono text-neutral-600 mt-1.5">
+              <span>1,000 tokens</span>
+              <span>5,000 tokens</span>
+              <span>10,000 tokens</span>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-[#1A1A1A]">
+            <div class="space-y-1.5">
+              <div class="flex justify-between text-xs font-mono">
+                <span class="text-neutral-400">Traditional RAG (Unpruned)</span>
+                <span id="valTrad" class="text-neutral-300 font-semibold">1,800 ms</span>
+              </div>
+              <div class="w-full bg-[#1A1A1A] h-2 rounded-full overflow-hidden">
+                <div id="barTrad" class="bg-neutral-500 h-full transition-all duration-300" style="width: 100%;"></div>
+              </div>
+              <p class="text-[10px] text-neutral-500 font-mono">Prompt ingestion bottleneck (TTFT) on full context</p>
+            </div>
+
+            <div class="space-y-1.5">
+              <div class="flex justify-between text-xs font-mono">
+                <span class="text-white">Rekha-Augmented RAG</span>
+                <span id="valRekha" class="text-emerald-400 font-semibold">1,008 ms</span>
+              </div>
+              <div class="w-full bg-[#1A1A1A] h-2 rounded-full overflow-hidden">
+                <div id="barRekha" class="bg-emerald-500 h-full transition-all duration-300" style="width: 56%;"></div>
+              </div>
+              <p class="text-[10px] text-neutral-500 font-mono">180ms control gates + 54% faster LLM token processing</p>
+            </div>
+          </div>
+
+          <div class="bg-black border border-[#1A1A1A] rounded p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div>
+              <div class="text-[10px] font-mono text-neutral-500 uppercase">Net Latency Delivered to User</div>
+              <div id="netSpeedup" class="text-sm font-semibold text-white font-mono mt-0.5">~792 ms Faster Time to First Token</div>
+            </div>
+            <div class="text-right">
+              <div class="text-[10px] font-mono text-neutral-500 uppercase">Input Token Cost Reduction</div>
+              <div id="netCost" class="text-sm font-semibold text-emerald-400 font-mono mt-0.5">54.2% Bill Reduction</div>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+    <!-- SECTION: POINT SOLUTIONS VS REKHA (Categorical Dominance Matrix) -->
+    <section id="matrix" class="border-t border-[#1A1A1A] py-20">
+      <div class="max-w-4xl mx-auto px-6">
+        
+        <div class="mb-10">
+          <div class="text-[10px] font-mono uppercase tracking-widest text-neutral-500 mb-1">Architecture Comparison</div>
+          <h2 class="text-2xl font-semibold text-white tracking-tight">Rekha vs Point Solutions</h2>
+          <p class="text-xs sm:text-sm text-neutral-400 mt-1 max-w-xl">
+            Why single-purpose tools fail in production and how Rekha unifies them into a sub-35ms control plane.
+          </p>
+        </div>
+
+        <div class="border border-[#1F1F1F] bg-[#0A0A0A] rounded-lg overflow-x-auto">
+          <table class="w-full text-left font-sans text-xs border-collapse min-w-[650px]">
+            <thead>
+              <tr class="border-b border-[#1A1A1A] text-neutral-400 font-mono text-[10px] uppercase tracking-wider bg-[#080808]">
+                <th class="py-3 px-4">System</th>
+                <th class="py-3 px-4">Mechanism</th>
+                <th class="py-3 px-4">Latency</th>
+                <th class="py-3 px-4">Architectural Limitation</th>
+                <th class="py-3 px-4 text-white bg-neutral-900/60 font-medium">Rekha Control Plane</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-[#1A1A1A] text-neutral-300">
+              
+              <tr class="hover:bg-neutral-900/20 transition-colors">
+                <td class="py-3 px-4 font-medium text-white font-mono">Microsoft LLMLingua</td>
+                <td class="py-3 px-4 font-mono text-neutral-400">Token Perplexity Drop</td>
+                <td class="py-3 px-4 font-mono text-neutral-400">~120 ms</td>
+                <td class="py-3 px-4 text-neutral-400">
+                  <span class="text-neutral-200">Syntax Amputation:</span> Deletes closing brackets <code class="text-neutral-300 font-mono">}</code>, corrupts Markdown tables, and drops negation words ("not").
+                </td>
+                <td class="py-3 px-4 bg-neutral-900/30 text-emerald-400 font-medium">
+                  Preserves table rows, JSON keys, and reading order intact via Samkshep.
+                </td>
+              </tr>
+
+              <tr class="hover:bg-neutral-900/20 transition-colors">
+                <td class="py-3 px-4 font-medium text-white font-mono">Nvidia NeMo Guardrails</td>
+                <td class="py-3 px-4 font-mono text-neutral-400">Secondary LLM Calls</td>
+                <td class="py-3 px-4 font-mono text-neutral-400">2,500 – 4,000 ms</td>
+                <td class="py-3 px-4 text-neutral-400">
+                  <span class="text-neutral-200">Generative Delay:</span> Calling another LLM doubles API bills and introduces unacceptable user wait times.
+                </td>
+                <td class="py-3 px-4 bg-neutral-900/30 text-emerald-400 font-medium">
+                  Sub-35ms non-autoregressive encoder runs locally for $0.00.
+                </td>
+              </tr>
+
+              <tr class="hover:bg-neutral-900/20 transition-colors">
+                <td class="py-3 px-4 font-medium text-white font-mono">Cohere Rerank</td>
+                <td class="py-3 px-4 font-mono text-neutral-400">Cross-Encoder Chunk Scoring</td>
+                <td class="py-3 px-4 font-mono text-neutral-400">~150 ms</td>
+                <td class="py-3 px-4 text-neutral-400">
+                  <span class="text-neutral-200">No Noise Pruning:</span> Reorders chunks but preserves all paragraph clutter. Token bills remain 100%.
+                </td>
+                <td class="py-3 px-4 bg-neutral-900/30 text-emerald-400 font-medium">
+                  Micro-slices within chunks and packs high-value clauses knapsack-style.
+                </td>
+              </tr>
+
+              <tr class="hover:bg-neutral-900/20 transition-colors">
+                <td class="py-3 px-4 font-medium text-white font-mono">Ragas / TruLens</td>
+                <td class="py-3 px-4 font-mono text-neutral-400">LLM-as-a-Judge Eval</td>
+                <td class="py-3 px-4 font-mono text-neutral-400">3,000 – 6,000 ms</td>
+                <td class="py-3 px-4 text-neutral-400">
+                  <span class="text-neutral-200">Offline Only:</span> Useful for post-hoc testing, impossible to run synchronously on live user chats.
+                </td>
+                <td class="py-3 px-4 bg-neutral-900/30 text-emerald-400 font-medium">
+                  Live in-flight grounding (~72ms) via Satya Praman before streaming.
+                </td>
+              </tr>
+
+              <tr class="hover:bg-neutral-900/20 transition-colors">
+                <td class="py-3 px-4 font-medium text-white font-mono">Redis LangCache</td>
+                <td class="py-3 px-4 font-mono text-neutral-400">Vector Cosine Distance</td>
+                <td class="py-3 px-4 font-mono text-neutral-400">~20 ms</td>
+                <td class="py-3 px-4 text-neutral-400">
+                  <span class="text-neutral-200">Threshold Drift:</span> Cosine distance falsely maps opposing intents ("How to cancel?" vs "How to upgrade?").
+                </td>
+                <td class="py-3 px-4 bg-neutral-900/30 text-emerald-400 font-medium">
+                  Canonical Intent Clusters via Smriti Gate guarantee 99%+ semantic fidelity.
+                </td>
+              </tr>
+
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- SECTION: AIR-GAPPED DOCKER & DEPLOYMENT -->
+    <section id="quickstart" class="border-t border-[#1A1A1A] py-20 bg-[#040404]">
+      <div class="max-w-4xl mx-auto px-6">
+        
+        <div class="mb-10">
+          <div class="text-[10px] font-mono uppercase tracking-widest text-neutral-500 mb-1">Production Deployment</div>
+          <h2 class="text-2xl font-semibold text-white tracking-tight">Air-Gapped & Zero-Internet Ready</h2>
+          <p class="text-xs sm:text-sm text-neutral-400 mt-1 max-w-xl">
+            Weights (~700MB) are automatically downloaded to your local cache on first initialization. For isolated VPCs, pre-cache them in your Docker build.
+          </p>
+        </div>
+
+        <div class="border border-[#1F1F1F] bg-[#0A0A0A] rounded-lg overflow-hidden font-mono text-xs">
+          <div class="flex items-center justify-between px-5 py-2.5 border-b border-[#1A1A1A] bg-[#080808] text-neutral-400 text-[10px]">
+            <span>Dockerfile (Offline Production VPC)</span>
+            <span>Docker Build</span>
+          </div>
+          <div class="p-5 text-neutral-300 leading-relaxed space-y-1 overflow-x-auto text-[11px]">
+            <div><span class="c-kw">FROM</span> python:3.10-slim</div>
+            <div><span class="c-kw">WORKDIR</span> /app</div>
+            <div><span class="c-kw">RUN</span> pip install --no-cache-dir rekha</div>
+            <div class="text-neutral-500"># Bake decision weights directly into image layer</div>
+            <div><span class="c-kw">RUN</span> python -c <span class="c-st">"import laya; from laya import Laya; Laya()"</span></div>
+            <div><span class="c-kw">ENV</span> REKHA_AIRGAPPED=<span class="c-st">true</span></div>
+            <div class="text-neutral-500"># Runs completely offline with zero external network access</div>
+            <div><span class="c-kw">CMD</span> [<span class="c-st">"uvicorn"</span>, <span class="c-st">"main:app"</span>, <span class="c-st">"--host"</span>, <span class="c-st">"0.0.0.0"</span>]</div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="border-t border-[#1A1A1A] bg-black py-10 relative z-10">
+    <div class="max-w-6xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-neutral-500 font-mono">
+      <div class="flex items-center gap-2.5">
+        <span class="text-white font-medium">Rekha</span>
+        <span>— Released under Apache-2.0 by Mine Labs.</span>
+      </div>
+      <div class="flex items-center gap-6">
+        <a href="https://github.com/MineLabs/Rekha" target="_blank" class="hover:text-white transition-colors">GitHub</a>
+        <a href="../Architecture.md" class="hover:text-white transition-colors">Architecture Spec</a>
+        <a href="../BENCHMARK_REPORT.md" class="hover:text-white transition-colors">Benchmark Report</a>
+        <a href="../Plan.md" class="hover:text-white transition-colors">Roadmap</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- JAVASCRIPT LOGIC -->
+  <script>
+    // Copy Command
+    function copyCommand() {
+      navigator.clipboard.writeText("pip install minelabs-rekha").then(() => {
+        const label = document.getElementById("copyLabel");
+        label.innerText = "Copied";
+        label.classList.add("text-emerald-400");
+        setTimeout(() => {
+          label.innerText = "Copy";
+          label.classList.remove("text-emerald-400");
+        }, 2000);
+      });
+    }
+
+    // Code Sandbox Toggle
+    const codeProtected = `<span class="c-kw">import</span> openai
+<span class="c-kw">from</span> rekha <span class="c-kw">import</span> RekhaGateway        <span class="c-cm"># 1. Import Rekha</span>
+
+gateway = <span class="c-fn">RekhaGateway</span>()              <span class="c-cm"># 2. Local non-autoregressive weights (0 API keys)</span>
+
+<span class="c-dec">@gateway.protect</span>                      <span class="c-cm"># 3. Apply protection decorator</span>
+<span class="c-kw">def</span> <span class="c-fn">my_rag_pipeline</span>(user_query: <span class="c-kw">str</span>):
+    chunks = vector_db.<span class="c-fn">similarity_search</span>(user_query, k=<span class="c-num">5</span>)
+    context = <span class="c-st">"\\n\\n"</span>.<span class="c-fn">join</span>([c.page_content <span class="c-kw">for</span> c <span class="c-kw">in</span> chunks])
+    
+    <span class="c-cm"># Context is automatically sliced via Samkshep (54% token reduction)</span>
+    <span class="c-cm"># Injections are intercepted in ~35ms before reaching this line</span>
+    response = openai.chat.completions.<span class="c-fn">create</span>(
+        model=<span class="c-st">"gpt-4o"</span>,
+        messages=[
+            {<span class="c-st">"role"</span>: <span class="c-st">"system"</span>, <span class="c-st">"content"</span>: f<span class="c-st">"Answer based on:\\n{context}"</span>},
+            {<span class="c-st">"role"</span>: <span class="c-st">"user"</span>, <span class="c-st">"content"</span>: user_query}
+        ]
+    )
+    <span class="c-cm"># Satya Praman verifies claims & numerical entities before stream</span>
+    <span class="c-kw">return</span> response.choices[<span class="c-num">0</span>].message.content, context`;
+
+    const codeTraditional = `<span class="c-kw">import</span> openai
+
+<span class="c-kw">def</span> <span class="c-fn">my_rag_pipeline</span>(user_query: <span class="c-kw">str</span>):
+    <span class="c-cm"># Traditional RAG: raw chunks dumped directly into prompt</span>
+    chunks = vector_db.<span class="c-fn">similarity_search</span>(user_query, k=<span class="c-num">5</span>)
+    context = <span class="c-st">"\\n\\n"</span>.<span class="c-fn">join</span>([c.page_content <span class="c-kw">for</span> c <span class="c-kw">in</span> chunks])
+    
+    <span class="c-cm"># ❌ No injection detection (vulnerable to prompt extraction)</span>
+    <span class="c-cm"># ❌ 100% token bloat (paying for boilerplate & noise)</span>
+    <span class="c-cm"># ❌ Zero verification of hallucinated dates or numbers</span>
+    response = openai.chat.completions.<span class="c-fn">create</span>(
+        model=<span class="c-st">"gpt-4o"</span>,
+        messages=[
+            {<span class="c-st">"role"</span>: <span class="c-st">"system"</span>, <span class="c-st">"content"</span>: f<span class="c-st">"Answer based on:\\n{context}"</span>},
+            {<span class="c-st">"role"</span>: <span class="c-st">"user"</span>, <span class="c-st">"content"</span>: user_query}
+        ]
+    )
+    <span class="c-kw">return</span> response.choices[<span class="c-num">0</span>].message.content`;
+
+    function toggleCodeView(view) {
+      const display = document.getElementById("codeDisplay");
+      const btnProt = document.getElementById("btnProtected");
+      const btnTrad = document.getElementById("btnTraditional");
+      
+      if (view === 'protected') {
+        display.innerHTML = `<code class="block">${codeProtected}</code>`;
+        btnProt.className = "px-2.5 py-0.5 rounded bg-neutral-800 text-white font-medium transition-all";
+        btnTrad.className = "px-2.5 py-0.5 rounded text-neutral-400 hover:text-white transition-all";
+      } else {
+        display.innerHTML = `<code class="block">${codeTraditional}</code>`;
+        btnTrad.className = "px-2.5 py-0.5 rounded bg-neutral-800 text-white font-medium transition-all";
+        btnProt.className = "px-2.5 py-0.5 rounded text-neutral-400 hover:text-white transition-all";
+      }
+    }
+
+    // 5-Stage Stepper Data
+    const stageSpecs = {
+      1: {
+        stage: "STAGE 01 OF 05",
+        concept: "Type: Inbound Security Gate",
+        title: "Layer 1: Inbound Guard Gate",
+        desc: "Evaluates incoming raw user queries against prompt injection vectors, system prompt extraction, jailbreaks, and sensitive PII before any vector database or LLM is queried.",
+        bullets: [
+          "Non-autoregressive binary classification avoids generative jailbreak vulnerabilities.",
+          "Deterministic regex engine scrubs API keys, bearer tokens, SSNs, credit cards, and emails.",
+          "Permits benign security inquiries while strictly filtering operational attacks."
+        ],
+        schema: "rekha/guard.py → GuardResult",
+        status: "STATUS: PASS",
+        statusClass: "text-emerald-400",
+        code: `{\n  "is_safe": true,\n  "blocked_reason": null,\n  "sanitized_query": "What are the SLA terms for enterprise billing?",\n  "matched_rules": [],\n  "confidence": 0.994,\n  "execution_time_ms": 35.8\n}`
+      },
+      2: {
+        stage: "STAGE 02 OF 05",
+        concept: "Concept: Instant Recall Memory Gate",
+        title: "Layer 2: Smriti Gate (Inbound Cache Gate)",
+        desc: "Maps queries against discrete canonical intent clusters, instantly returning authoritative organizational answers without touching downstream vector indices or LLMs.",
+        bullets: [
+          "Discrete intent clustering avoids arbitrary cosine threshold drift.",
+          "Local in-memory LRU/TTL cache responds in sub-5ms on warm hits.",
+          "Guarantees 100% token cost reduction on organizational FAQ patterns."
+        ],
+        schema: "rekha/cache.py → CacheResult",
+        status: "STATUS: CACHE_HIT (0 API CALLS)",
+        statusClass: "text-blue-400",
+        code: `{\n  "hit": true,\n  "matched_intent": "company_vacation_policy",\n  "cached_response": "Full-time employees receive 20 days PTO annually...",\n  "intent_confidence": 0.962,\n  "ttl_remaining_sec": 84200,\n  "execution_time_ms": 34.2\n}`
+      },
+      3: {
+        stage: "STAGE 03 OF 05",
+        concept: "Concept: Intelligent Pathway Dispatcher",
+        title: "Layer 3: Disha Router (Query Router)",
+        desc: "Determines the optimal execution pathway for the request: bypass RAG entirely (chitchat), route to deterministic structured tools (SQL/APIs), or dispatch to semantic vector search.",
+        bullets: [
+          "Prevents unnecessary vector database lookups for pure conversational queries.",
+          "Routes SQL/structured inquiries to deterministic database tools.",
+          "Sub-38ms classification replaces 2,000ms LLM tool routers."
+        ],
+        schema: "rekha/router.py → RoutingDecision",
+        status: "ROUTE: VECTOR_SEARCH",
+        statusClass: "text-purple-400",
+        code: `{\n  "target_route": "VECTOR_SEARCH",\n  "tool_name": null,\n  "bypass_vector_db": false,\n  "route_confidence": 0.952,\n  "execution_time_ms": 37.9\n}`
+      },
+      4: {
+        stage: "STAGE 04 OF 05",
+        concept: "Concept: Context Precision Optimizer",
+        title: "Layer 4: Samkshep Slicer (Context Optimizer)",
+        desc: "Micro-slices retrieved chunks into semantic units, scores each unit in parallel with non-autoregressive weights, and packs the top-scoring sentences into a token budget while preserving original reading order.",
+        bullets: [
+          "Syntax-aware micro-slicer preserves Markdown tables, code blocks, and list hierarchies.",
+          "Zero token-dropping perplexity errors (does not amputate closing brackets or negation words).",
+          "Consistently prunes 50% to 65% of noise tokens from prompts."
+        ],
+        schema: "rekha/optimizer.py → ContextOptimizationResult",
+        status: "PRUNED: 54.8% NOISE TOKENS",
+        statusClass: "text-emerald-400",
+        code: `{\n  "original_tokens": 4250,\n  "optimized_tokens": 1920,\n  "pruning_ratio": 0.548,\n  "micro_slices_evaluated": 34,\n  "micro_slices_retained": 15,\n  "syntax_valid": true,\n  "execution_time_ms": 68.7\n}`
+      },
+      5: {
+        stage: "STAGE 05 OF 05",
+        concept: "Concept: Outbound Grounding Auditor",
+        title: "Layer 5: Satya Praman (Outbound Verifier)",
+        desc: "Performs in-flight entity anchor validation (dollar amounts, dates, percentages) and verifies claims against retrieved context before streaming the response to the user.",
+        bullets: [
+          "Regex entity auditor verifies exact numerical matches between answer and source context.",
+          "Detects negative constraint violations (e.g. answering something the document forbids).",
+          "Returns typed actions: STREAM_TO_USER, RETRY_WITH_PENALTY, or BLOCK_AND_FALLBACK."
+        ],
+        schema: "rekha/verifier.py → VerificationResult",
+        status: "DECISION: STREAM_TO_USER",
+        statusClass: "text-emerald-400",
+        code: `{\n  "status": "STREAM_TO_USER",\n  "grounding_score": 0.965,\n  "entity_matches": [\n    {"entity": "$250.00", "verified_in_context": true},\n    {"entity": "30 days", "verified_in_context": true}\n  ],\n  "negative_constraint_violated": false,\n  "execution_time_ms": 71.4\n}`
+      }
+    };
+
+    function setLayer(layerNum) {
+      for (let i = 1; i <= 5; i++) {
+        const btn = document.getElementById(`btn-${i}`);
+        if (!btn) continue;
+        const name = btn.querySelector(".stage-name");
+        const ms = btn.querySelector(".stage-ms");
+        if (i === layerNum) {
+          btn.className = "text-left p-3.5 rounded-lg border bg-[#161616] border-neutral-400 shadow-sm transition-all cursor-pointer";
+          if (name) name.className = "stage-name text-xs font-semibold text-white mt-1";
+          if (ms) ms.className = "stage-ms text-[11px] font-mono text-emerald-400 mt-2 font-medium";
+        } else {
+          btn.className = "text-left p-3.5 rounded-lg border bg-black border-neutral-800 hover:border-neutral-700 transition-all cursor-pointer";
+          if (name) name.className = "stage-name text-xs font-semibold text-neutral-300 mt-1";
+          if (ms) ms.className = "stage-ms text-[11px] font-mono text-neutral-500 mt-2";
+        }
+      }
+
+      const spec = stageSpecs[layerNum];
+      if (!spec) return;
+
+      const stageEl = document.getElementById("specStage");
+      if (stageEl) stageEl.innerText = spec.stage;
+
+      const conceptEl = document.getElementById("specConcept");
+      if (conceptEl) conceptEl.innerText = spec.concept;
+
+      const titleEl = document.getElementById("specTitle");
+      if (titleEl) titleEl.innerText = spec.title;
+
+      const descEl = document.getElementById("specDesc");
+      if (descEl) descEl.innerText = spec.desc;
+
+      const schemaEl = document.getElementById("specSchemaPath");
+      if (schemaEl) schemaEl.innerText = spec.schema;
+
+      const statusEl = document.getElementById("specDecisionStatus");
+      if (statusEl) {
+        statusEl.innerText = spec.status;
+        statusEl.className = `${spec.statusClass} font-semibold font-mono`;
+      }
+
+      const codeEl = document.getElementById("specCodeBlock");
+      if (codeEl) codeEl.innerText = spec.code;
+
+      const list = document.getElementById("specList");
+      if (list && spec.bullets) {
+        list.innerHTML = spec.bullets.map((b, idx) => `
+          <li class="flex items-start gap-2">
+            <span class="text-neutral-500 font-mono">0${idx + 1}.</span>
+            <span>${b}</span>
+          </li>
+        `).join("");
+      }
+    }
+
+    // Live Query Simulation Engine
+    function runSimulation(type) {
+      if (type === 'attack') {
+        setLayer(1);
+        const code = `{\n  "is_safe": false,\n  "blocked_reason": "PROMPT_INJECTION_DETECTED",\n  "sanitized_query": "[HALTED BY INBOUND GUARD]",\n  "matched_rules": [\n    "system_directive_override",\n    "ignore_previous_instructions"\n  ],\n  "confidence": 0.998,\n  "execution_time_ms": 34.7\n}`;
+        document.getElementById("specCodeBlock").innerText = code;
+        document.getElementById("specDecisionStatus").innerText = "STATUS: HALTED_BLOCKED";
+        document.getElementById("specDecisionStatus").className = "text-red-400 font-semibold font-mono";
+      } else if (type === 'cache') {
+        setLayer(2);
+        const code = `{\n  "hit": true,\n  "matched_intent": "company_vacation_policy",\n  "cached_response": "Full-time employees receive 20 days PTO annually...",\n  "intent_confidence": 0.989,\n  "ttl_remaining_sec": 84200,\n  "execution_time_ms": 4.1\n}`;
+        document.getElementById("specCodeBlock").innerText = code;
+        document.getElementById("specDecisionStatus").innerText = "STATUS: SMRITI_CACHE_HIT (<5ms)";
+        document.getElementById("specDecisionStatus").className = "text-blue-400 font-semibold font-mono";
+      } else {
+        setLayer(4);
+        const code = `{\n  "original_tokens": 4250,\n  "optimized_tokens": 1920,\n  "pruning_ratio": 0.548,\n  "syntax_valid": true,\n  "execution_time_ms": 68.7\n}`;
+        document.getElementById("specCodeBlock").innerText = code;
+        document.getElementById("specDecisionStatus").innerText = "STATUS: SAMKSHEP_PRUNED (54.8%)";
+        document.getElementById("specDecisionStatus").className = "text-emerald-400 font-semibold font-mono";
+      }
+    }
+
+    // Latency Paradox Calculation
+    function updateParadox() {
+      const tokens = parseInt(document.getElementById("calcSlider").value);
+      document.getElementById("calcTokensLabel").innerText = tokens.toLocaleString() + " Tokens";
+
+      const tradTime = Math.round(tokens * 0.45);
+      const rekhaTokens = Math.round(tokens * 0.458);
+      const rekhaTime = Math.round(rekhaTokens * 0.45) + 180;
+
+      document.getElementById("valTrad").innerText = tradTime.toLocaleString() + " ms";
+      document.getElementById("valRekha").innerText = rekhaTime.toLocaleString() + " ms";
+
+      const rekhaPct = Math.min(100, Math.round((rekhaTime / tradTime) * 100));
+      document.getElementById("barRekha").style.width = rekhaPct + "%";
+
+      const delta = tradTime - rekhaTime;
+      if (delta > 0) {
+        document.getElementById("netSpeedup").innerText = `~${delta.toLocaleString()} ms Faster Time to First Token`;
+      } else {
+        document.getElementById("netSpeedup").innerText = `~${Math.abs(delta)} ms Control Delta`;
+      }
+    }
+
+    updateParadox();
+  </script>
+</body>
+</html>
