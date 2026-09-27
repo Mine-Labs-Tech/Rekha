@@ -14,10 +14,10 @@
 </p>
 
 <p align="center">
-  <a href="landing/index.html">Overview</a> •
-  <a href="landing/docs.html">Documentation & Recipes</a> •
-  <a href="Architecture.md">Architecture Specification</a> •
-  <a href="BENCHMARK_REPORT.md">Benchmarks</a>
+  <a href="https://mine-labs-tech.github.io/Rekha/"><b>Website</b></a> •
+  <a href="https://mine-labs-tech.github.io/Rekha/docs.html"><b>Documentation & Cookbook</b></a> •
+  <a href="Architecture.md"><b>Architecture Specification</b></a> •
+  <a href="BENCHMARK_REPORT.md"><b>Benchmarks</b></a>
 </p>
 
 ---
