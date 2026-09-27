@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "minelabs-rekha"
-version = "0.1.1"
+version = "0.1.2"
 description = "High-Performance System-1 Control Plane and Gateway for Production RAG"
 readme = "README.md"
 requires-python = ">=3.10"
