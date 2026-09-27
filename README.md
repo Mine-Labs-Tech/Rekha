@@ -1,153 +1,134 @@
-# REKHA
+# Rekha
 
 <p align="center">
   <a href="https://pypi.org/project/minelabs-rekha/"><img src="https://img.shields.io/pypi/v/minelabs-rekha.svg?color=blue" alt="PyPI version" /></a>
   <img src="https://img.shields.io/badge/License-Apache_2.0-blue.svg" alt="License: Apache 2.0" />
   <img src="https://img.shields.io/badge/Python-3.10%2B-blue.svg" alt="Python 3.10+" />
   <img src="https://img.shields.io/badge/Latency-Sub--35ms-brightgreen.svg" alt="Sub-35ms Latency" />
-  <img src="https://img.shields.io/badge/API_Keys-Zero_Required-orange.svg" alt="Zero API Keys" />
-  <img src="https://img.shields.io/badge/Deployment-100%25_Air--Gapped-success.svg" alt="100% Air-Gapped" />
-</p>
-
-<h3 align="center">
-  <b>The High-Performance System-1 Control Plane for Production RAG</b>
-</h3>
-
-<p align="center">
-  Cut LLM token bills by 50%+, block prompt injections in ~35ms, and audit hallucinations before streaming—using a single Python decorator. Zero external API calls, zero migration friction, 100% free and open-source.
+  <img src="https://img.shields.io/badge/Air--Gapped-Zero_API_Keys-success.svg" alt="Air-Gapped" />
 </p>
 
 <p align="center">
-  <a href="landing/index.html"><b>🌐 Interactive Landing Page</b></a> •
-  <a href="landing/docs.html"><b>📖 Documentation & Cookbook</b></a> •
-  <a href="Architecture.md"><b>🏗️ Technical Architecture</b></a> •
-  <a href="BENCHMARK_REPORT.md"><b>📊 Benchmark Report</b></a> •
-  <a href="#-what-makes-rekha-different-from-competitors"><b>🥊 Competitor Teardown</b></a>
+  <b>Sub-35ms non-autoregressive control plane for production RAG systems.</b><br>
+  Intercepts prompt injections, caches recurring intents, prunes 50%+ context noise, and audits hallucinations with zero external API dependencies.
+</p>
+
+<p align="center">
+  <a href="landing/index.html">Overview</a> •
+  <a href="landing/docs.html">Documentation & Recipes</a> •
+  <a href="Architecture.md">Architecture Specification</a> •
+  <a href="BENCHMARK_REPORT.md">Benchmarks</a>
 </p>
 
 ---
 
-## ⚡ The Core USP (Unique Selling Proposition)
+## Overview
 
-> **"Rekha is the first zero-latency, 100% open-source System-1 control plane that wraps around any existing RAG pipeline in 1 line of code—cutting token bills by 50%, blocking prompt injections in 35ms, and preventing hallucinations with zero external API keys."**
+Rekha is an open-source, deterministic **System-1 control plane** designed to wrap around existing Retrieval-Augmented Generation (RAG) pipelines without modifying vector databases, embedding models, or system prompts.
 
-### Why Developers Choose Rekha:
-1. **Zero Migration Friction (The 1-Line Decorator):** You don't re-index your vector database, you don't migrate embeddings, and you don't rewrite your prompts. Just add `@gateway.protect`.
-2. **Sub-35ms Non-Autoregressive Determinism:** Rekha doesn't use a slow generative LLM to police another LLM. It uses a mathematical non-autoregressive encoder (`Choice`, `Score`, `Noul`) that evaluates decisions in ~35ms and physically cannot be hijacked by prompt injections.
-3. **100% Air-Gapped & Free:** Zero cloud telemetry, zero API keys, zero dollars spent. Your proprietary data never leaves your local CPU or GPU.
-4. **The Latency Paradox:** By pruning 50%+ of noisy context tokens before prompt dispatch, downstream LLM generation begins **~800ms earlier**, making your entire RAG pipeline **~620ms faster overall**.
+Rather than invoking expensive secondary LLMs (which introduce 1,500ms–3,000ms latency and generative vulnerabilities), Rekha executes multi-predicate decision boundaries in **sub-35ms** using local non-autoregressive encoder backbones.
 
----
+### Key Capabilities
 
-## 🏗️ Architecture: The 5-Layer Sandwich Control Plane
-
-```
-                    ┌────────────────────────────────────────────────────────┐
-                    │                      REKHA GATEWAY                     │
-User Query ────────►│                                                        │
-                    │  [ INBOUND STAGE ]                                     │
-                    │  1. Inbound Guard Gate   (Jailbreak, PII, Policy: ~37ms)│
-                    │  2. Smriti Gate          (Canonical Intent Cache: <5ms)│
-                    │  3. Disha Router         (Bypass / SQL / Vector: ~38ms)│
-                    │                                                        │
-                    │  [ RETRIEVAL STAGE ]                                   │
-                    │  4. Samkshep Slicer      (Syntax-Safe Pruning -54%: ~69ms)
-                    └───────────────────────────┬────────────────────────────┘
-                                                │
-                                                ▼
-                                    ┌───────────────────────┐
-                                    │     EXISTING RAG      │
-                                    │  (100% Untouched)     │
-                                    │  Vector DB  │   LLM   │
-                                    └───────────┬───────────┘
-                                                │
-                    ┌───────────────────────────┴────────────────────────────┐
-                    │  [ OUTBOUND STAGE ]                                    │
-                    │  5. Satya Praman Gate    (Entity Anchors, Negative     │
-                    │                           Constraints, Grounding: ~72ms│
-                    │                                                        │
-                    │  Decision:  [ SUPPORTED ]   ──► Stream to User         │
-                    │             [ BLOCK/RETRY ] ──► Fallback / Regenerate  │
-                    └────────────────────────────────────────────────────────┘
-```
+- **Inbound Security Gate:** Detects prompt injections, jailbreaks, and scrubs sensitive PII (credit cards, SSNs, tokens) deterministically in ~37ms.
+- **Canonical Intent Cache (Smriti):** Resolves recurring questions in &lt;5ms without querying vector indices or downstream LLMs.
+- **Query Router (Disha):** Routes conversational queries and structured SQL lookups in ~38ms, avoiding unnecessary vector database searches.
+- **Context Optimizer (Samkshep):** Micro-slices retrieved chunks into atomic semantic units, preserving Markdown tables and code syntax while pruning 50%–60% of noise tokens.
+- **Outbound Grounding Auditor (Satya Praman):** Validates entity anchors (currency, dates, percentages) and enforces negative policy constraints in ~72ms before streaming responses.
+- **The Latency Paradox:** Removing 50%+ noise tokens reduces LLM time-to-first-token (TTFT) by ~800ms. Despite the ~180ms control plane overhead, total end-to-end latency is **~620ms faster**.
 
 ---
 
-## ⏱️ Live Response Times (Empirically Measured on Local CPU/GPU)
-
-| Layer | Component Name | Function / Decision | Response Time | vs. LLM-Prompt Guardrails |
-| :--- | :--- | :--- | :---: | :--- |
-| **Layer 1** | **Inbound Guard Gate** | Evaluates prompt injections, jailbreaks, PII & toxicity | **~37 ms** | **~80x faster** than calling GPT-4o (2,500ms) |
-| **Layer 2** | **Smriti Gate** | Canonical Intent Clustering + local memory LRU/TTL | **&lt;5 ms (Hit)** | **~90x faster** than a full Vector DB + LLM call |
-| **Layer 3** | **Disha Router** | Categorizes `BYPASS`, `STRUCTURED_TOOL`, or `VECTOR` | **~38 ms** | **~75x faster** than LLM tool routers |
-| **Layer 4** | **Samkshep Slicer** | Micro-slicing + parallel batch scoring + knapsack packing | **~69 ms** | Slices 50%+ noise in memory (preserves tables) |
-| **Layer 5** | **Satya Praman** | Entity anchor audit ($ / dates / %) + negative constraints | **~72 ms** | Replaces 3-second LLM-as-a-judge evals |
-
-> **The Net Latency Paradox:** Rekha adds ~180ms of total control overhead on full RAG, but because Samkshep prunes 50%+ of input tokens, the downstream LLM streams its first token **800ms faster**. **Net result: The user gets their answer ~620ms FASTER.**
-
----
-
-## 📦 Installation
-
-Rekha is published on PyPI as `minelabs-rekha`. It runs **100% locally and offline**—it does not require any API keys, tokens, or external network connections:
+## Installation
 
 ```bash
 pip install minelabs-rekha
 ```
 
-> **Note on Imports:** Regardless of the PyPI distribution name, the Python package imports cleanly as `rekha`:
-> ```python
-> import rekha
-> from rekha import RekhaGateway
-> ```
+Rekha runs 100% locally and offline. It requires zero API keys or external network connections during inference.
 
 ---
 
-## 🚀 60-Second Quickstart
+## Quickstart
 
-Add protection to your existing RAG pipeline in 2 lines:
+Add Rekha to any existing RAG pipeline using the `@gateway.protect` decorator:
 
 ```python
 import openai
 from rekha import RekhaGateway
 
-# 1. Initialize the Gateway (loads local weights once)
+# Initialize gateway (loads local encoder weights once)
 gateway = RekhaGateway(
-    target_context_reduction=0.50,  # Prune 50% of context noise
+    target_context_reduction=0.50,
     negative_constraints=[
-        "Do not disclose internal employee compensation.",
-        "Do not promise discounts higher than 15%."
+        "Do not disclose internal compensation policies.",
+        "Do not offer unapproved discounts."
     ]
 )
 
-# 2. Decorate your existing RAG query function
 @gateway.protect
-def my_rag_pipeline(user_query: str):
-    chunks = vector_db.similarity_search(user_query, k=5)
+def query_rag(query: str):
+    chunks = vector_db.similarity_search(query, k=5)
     context = "\n\n".join([c.page_content for c in chunks])
-    
+
     response = openai.chat.completions.create(
         model="gpt-4o",
         messages=[
-            {"role": "system", "content": f"Answer based on:\n{context}"},
-            {"role": "user", "content": user_query}
+            {"role": "system", "content": f"Answer using:\n{context}"},
+            {"role": "user", "content": query}
         ]
     )
     return response.choices[0].message.content, context
 
-# 3. Call your function as usual
-result = my_rag_pipeline("What are our SLA response times for Tier-1 outages?")
+# Execute pipeline
+result = query_rag("What are our SLA terms for Tier-1 outages?")
 
-print("Final Output:", result.final_output)
-print("Execution Source:", result.source)          # "CACHE", "RAG_VERIFIED", or "BLOCKED_GUARD"
-print("Control Overhead:", result.total_overhead_latency_ms, "ms")
+print("Response:", result.final_output)
+print("Source:", result.source)                         # CACHE, RAG_VERIFIED, or BLOCKED_GUARD
+print("Overhead Latency:", result.total_overhead_latency_ms, "ms")
 ```
 
 ---
 
-## 🍳 Production Framework Cookbook
+## Execution Pipeline
 
-### 1. LangChain & LangGraph
+```
+User Query ──► [ INBOUND STAGE ]
+                 ├── Layer 1: Inbound Guard Gate   (Jailbreak & PII Filter: ~37ms)
+                 ├── Layer 2: Smriti Gate          (Canonical Intent Cache: <5ms)
+                 └── Layer 3: Disha Router         (Bypass / SQL / Vector: ~38ms)
+                                     │
+                                     ▼
+               [ RETRIEVAL STAGE ]
+                 └── Layer 4: Samkshep Slicer      (Syntax-Safe Pruning -54%: ~69ms)
+                                     │
+                                     ▼
+               [ EXISTING PIPELINE ] ──► Vector DB ──► Model (GPT-4o, Claude)
+                                     │
+                                     ▼
+               [ OUTBOUND STAGE ]
+                 └── Layer 5: Satya Praman Gate    (Entity Anchor Audit: ~72ms)
+                                     │
+                                     ▼
+                               Stream to User
+```
+
+### Layer Latency Profile
+
+| Stage | Name | Target Function | Measured Latency |
+| :--- | :--- | :--- | :---: |
+| **01** | **Inbound Guard** | Evaluates prompt injections, jailbreaks, and PII masking | **~37 ms** |
+| **02** | **Smriti Gate** | Canonical intent clustering + local LRU cache | **&lt;5 ms (Hit)** |
+| **03** | **Disha Router** | Dispatches to `BYPASS`, `STRUCTURED_TOOL`, or `VECTOR` | **~38 ms** |
+| **04** | **Samkshep Slicer** | Parallel sentence scoring & knapsack packing | **~69 ms** |
+| **05** | **Satya Praman** | Entity anchor audit ($ / dates) & policy compliance | **~72 ms** |
+
+---
+
+## Framework Integrations
+
+### LangChain & LangGraph
+
 ```python
 from langchain_core.runnables import RunnableLambda
 from langchain_openai import ChatOpenAI
@@ -165,7 +146,8 @@ def run_langchain_pipeline(query: str):
     return response.content, context_str
 ```
 
-### 2. LlamaIndex
+### LlamaIndex
+
 ```python
 from llama_index.core import VectorStoreIndex
 from rekha import RekhaGateway
@@ -180,7 +162,8 @@ def llamaindex_query(query_text: str):
     return str(response), context
 ```
 
-### 3. FastAPI Service with Production Headers
+### FastAPI Production Service
+
 ```python
 from fastapi import FastAPI, HTTPException, Response
 from pydantic import BaseModel
@@ -195,14 +178,13 @@ class ChatRequest(BaseModel):
 @app.post("/v1/chat")
 async def chat_endpoint(req: ChatRequest, response: Response):
     result = gateway.execute(query=req.query, rag_executor=my_internal_rag_worker)
-    
-    # Emit observability headers
+
     response.headers["X-Rekha-Latency-Ms"] = str(round(result.total_overhead_latency_ms, 2))
     response.headers["X-Rekha-Source"] = result.source
-    
+
     if result.source == "BLOCKED_GUARD":
         raise HTTPException(status_code=400, detail=result.final_output)
-        
+
     return {
         "response": result.final_output,
         "source": result.source,
@@ -212,30 +194,29 @@ async def chat_endpoint(req: ChatRequest, response: Response):
 
 ---
 
-## 🥊 What Makes Rekha Different From Competitors?
+## Comparison with Alternatives
 
-| Competitor Category | Key Players | How They Work | Why Rekha is Radically Better |
+| Category | Point Solution | Common Limitations | Rekha Advantage |
 | :--- | :--- | :--- | :--- |
-| **Prompt Compressors** | **Microsoft LLMLingua** | Token-level perplexity dropping via small causal models. | **LLMLingua destroys syntax:** Deletes closing brackets `}`, corrupts tables/JSON, and drops words like *"not"*. <br>👉 **Rekha preserves syntax:** Micro-slicer protects Markdown tables, code blocks, and natural reading order. |
-| **AI Guardrails** | **Nvidia NeMo / Guardrails AI** | Uses Colang rules or calls secondary LLMs to check safety. | **Too slow & expensive:** Calling a second LLM adds 2–4 seconds of latency and doubles API bills. <br>👉 **Rekha blocks injections in ~35ms** locally for $0.00 without generative lag. |
-| **Document Rerankers** | **Cohere Rerank / BGE** | Reorders retrieved chunks by relevance score. | **Does not compress or verify:** If a top chunk has 1,000 tokens with only 1 useful sentence, you still pay for all 1,000 tokens. <br>👉 **Rekha prunes the noise inside the chunks** and audits output facts before delivery. |
-| **Evaluation / Grounding** | **Ragas / TruLens** | Calls GPT-4o ("LLM-as-a-judge") to grade answers against context. | **Unusable on live user traffic:** Taking 3 seconds to verify an answer kills live chat UX. <br>👉 **Rekha verifies negative constraints & numbers in ~70ms** before streaming. |
-| **Semantic Caches** | **Redis LangCache / GPTCache** | Cosine distance thresholds over 1536d vector embeddings. | **Threshold Drift:** Small distance differences cause "How do I cancel?" to falsely match "How do I upgrade?". <br>👉 **Rekha uses discrete Canonical Intent Clustering**, yielding 99%+ deterministic confidence matches. |
+| **Context Pruning** | LLMLingua | Token-level perplexity drops corrupt tables, JSON, and negation tokens. | **Syntax-Safe Micro-Slicing:** Evaluates complete sentence units; preserves Markdown tables and code. |
+| **Guardrails** | NeMo / Guardrails AI | Generative checks add 2,000ms–4,000ms latency and double LLM bills. | **Sub-35ms Non-Autoregressive:** Evaluates binary classification heads locally with zero API cost. |
+| **Rerankers** | Cohere / BGE | Reorders chunks without pruning internal chunk noise. | **In-Chunk Pruning:** Discards irrelevant sentences inside retrieved chunks, saving 50%+ tokens. |
+| **Evaluation** | Ragas / TruLens | Asynchronous or batch evaluation; too slow for live chat streaming. | **In-Flight Grounding:** Audits exact entity anchors ($ / dates / %) in ~72ms before stream delivery. |
+| **Semantic Cache** | Redis LangCache | Cosine similarity thresholds drift, causing false-positive matches. | **Canonical Intent Clustering:** Discrete cluster mapping guarantees high-confidence FAQ cache hits. |
 
 ---
 
-## 🐳 Air-Gapped Production Deployment
+## Air-Gapped Deployment
 
-For enterprise VPCs with zero outbound internet access, pre-bake the model weights into your container image:
+For secure environments with zero external network access, pre-cache model weights in your container image during build:
 
 ```dockerfile
 FROM python:3.10-slim
 WORKDIR /app
 
-# Install package
 RUN pip install --no-cache-dir minelabs-rekha fastapi uvicorn
 
-# Pre-cache local weights into image during build
+# Pre-cache weights into image during build
 ENV REKHA_OFFLINE_MODE=1
 RUN python -c "from rekha import RekhaGateway; RekhaGateway()"
 
@@ -246,34 +227,6 @@ CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
 
 ---
 
-## 📂 Repository Structure
+## License
 
-```
-rekha/
-├── rekha/                     # Core Python Package (Apache-2.0)
-│   ├── __init__.py            # Package entrypoint & public exports
-│   ├── gateway.py             # RekhaGateway orchestrator & @protect decorator
-│   ├── guard.py               # Layer 1: Inbound Guard Gate (Injection, PII, Toxicity)
-│   ├── cache.py               # Layer 2: Smriti Gate (Canonical Intent Clustering)
-│   ├── router.py              # Layer 3: Disha Router (Query Dispatcher)
-│   ├── optimizer.py           # Layer 4: Samkshep Slicer (Context Optimizer)
-│   ├── verifier.py            # Layer 5: Satya Praman (Outbound Grounding Auditor)
-│   └── types.py               # Pydantic v2 data models & decision contracts
-│
-├── landing/                   # Sleek Obsidian Web Interface
-│   ├── index.html             # High-conversion interactive landing page
-│   └── docs.html              # Comprehensive technical docs & framework cookbook
-│
-├── tests/                     # 25-Stage Automated Enterprise Test Suite (pytest)
-├── Architecture.md            # Mathematical specifications & layer deep-dives
-├── BENCHMARK_REPORT.md        # Comprehensive evaluation report
-├── Plan.md                    # Strategic roadmap & competitor teardown
-├── pyproject.toml             # Build & packaging configuration
-└── README.md                  # Project documentation
-```
-
----
-
-## 📜 License
-
-Distributed under the **Apache-2.0 License**. Free for personal, commercial, and enterprise production deployments with zero restrictions.
+Rekha is distributed under the **Apache-2.0 License**. Free for personal, commercial, and enterprise production deployments with zero restrictions.
