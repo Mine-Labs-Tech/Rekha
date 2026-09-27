@@ -38,9 +38,9 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/mine-labs/rekha"
-Documentation = "https://github.com/mine-labs/rekha#readme"
-Repository = "https://github.com/mine-labs/rekha.git"
+Homepage = "https://github.com/Mine-Labs-Tech/Rekha"
+Documentation = "https://github.com/Mine-Labs-Tech/Rekha#readme"
+Repository = "https://github.com/Mine-Labs-Tech/Rekha.git"
 
 [tool.hatch.build.targets.sdist]
 only-include = ["rekha", "README.md", "pyproject.toml", "Architecture.md"]
