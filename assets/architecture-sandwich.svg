@@ -1,0 +1,172 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 420" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#090D11" />
+      <stop offset="100%" stop-color="#05080A" />
+    </linearGradient>
+    <linearGradient id="emeraldGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#10B981" />
+      <stop offset="100%" stop-color="#34D399" />
+    </linearGradient>
+    <linearGradient id="blueGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#3B82F6" />
+      <stop offset="100%" stop-color="#60A5FA" />
+    </linearGradient>
+    <linearGradient id="purpleGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#8B5CF6" />
+      <stop offset="100%" stop-color="#A78BFA" />
+    </linearGradient>
+    <linearGradient id="cardGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#131920" />
+      <stop offset="100%" stop-color="#0D1217" />
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="4" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <style>
+    .title { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 20px; font-weight: 700; fill: #FFFFFF; }
+    .subtitle { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 13px; fill: #8B949E; }
+    .badge { font-family: "JetBrains Mono", Menlo, Consolas, monospace; font-size: 11px; font-weight: 600; }
+    .node-title { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 14px; font-weight: 600; fill: #F0F6FC; }
+    .node-sub { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 11px; fill: #8B949E; }
+    .node-metric { font-family: "JetBrains Mono", Menlo, Consolas, monospace; font-size: 12px; font-weight: 700; }
+    .conn { stroke: #30363D; stroke-width: 2; stroke-dasharray: 4 4; }
+    .conn-active { stroke: #34D399; stroke-width: 2.5; }
+  </style>
+
+  <!-- Canvas Background -->
+  <rect x="0" y="0" width="1100" height="420" rx="16" fill="url(#bgGrad)" stroke="#21262D" stroke-width="1.5" />
+
+  <!-- Header Section -->
+  <g transform="translate(40, 42)">
+    <circle cx="10" cy="10" r="6" fill="#34D399" filter="url(#glow)" />
+    <text x="28" y="16" class="title">Rekha 5-Layer Sandwich Control Plane</text>
+    <text x="440" y="16" class="badge" fill="#34D399" letter-spacing="1">SUB-35ms NON-AUTOREGRESSIVE SYSTEM-1 GATEWAY</text>
+    <text x="0" y="40" class="subtitle">Deterministic security boundary, context micro-slicing, and grounding audit wrapping production RAG.</text>
+  </g>
+
+  <!-- Flow Arrows / Connection Paths -->
+  <!-- Inbound to Layer 1 -->
+  <path d="M 120 180 L 160 180" class="conn-active" />
+  <polygon points="162,180 154,175 154,185" fill="#34D399" />
+
+  <!-- Layer 1 to Layer 2 -->
+  <path d="M 320 180 L 350 180" class="conn-active" />
+  <polygon points="352,180 344,175 344,185" fill="#34D399" />
+
+  <!-- Layer 2 to Layer 3 -->
+  <path d="M 510 180 L 540 180" class="conn-active" />
+  <polygon points="542,180 534,175 534,185" fill="#34D399" />
+
+  <!-- Layer 3 to Vector DB -->
+  <path d="M 700 180 L 740 180" class="conn-active" />
+  <polygon points="742,180 734,175 734,185" fill="#34D399" />
+
+  <!-- Vector DB down to Layer 4 -->
+  <path d="M 830 225 L 830 295 L 700 295" class="conn-active" />
+  <polygon points="698,295 706,290 706,300" fill="#34D399" />
+
+  <!-- Layer 4 to LLM -->
+  <path d="M 540 295 L 500 295" class="conn-active" />
+  <polygon points="498,295 506,290 506,300" fill="#34D399" />
+
+  <!-- LLM to Layer 5 -->
+  <path d="M 370 295 L 340 295" class="conn-active" />
+  <polygon points="338,295 346,290 346,300" fill="#34D399" />
+
+  <!-- Layer 5 to Safe Stream Out -->
+  <path d="M 180 295 L 140 295" class="conn-active" />
+  <polygon points="138,295 146,290 146,300" fill="#34D399" />
+
+  <!-- ================= TOP ROW: INBOUND STAGES ================= -->
+
+  <!-- START: Inbound Query Node -->
+  <g transform="translate(40, 140)">
+    <rect width="80" height="80" rx="10" fill="#161B22" stroke="#30363D" stroke-width="1.5" />
+    <text x="40" y="38" text-anchor="middle" class="node-title" font-size="12">Raw</text>
+    <text x="40" y="54" text-anchor="middle" class="node-title" font-size="12">Query</text>
+  </g>
+
+  <!-- STAGE 01: Inbound Guard -->
+  <g transform="translate(160, 135)">
+    <rect width="160" height="90" rx="12" fill="url(#cardGrad)" stroke="#EF4444" stroke-width="1.5" />
+    <rect x="12" y="12" width="56" height="18" rx="4" fill="rgba(239, 68, 68, 0.15)" />
+    <text x="40" y="25" text-anchor="middle" class="badge" fill="#F87171">STAGE 01</text>
+    <text x="14" y="50" class="node-title">Inbound Guard</text>
+    <text x="14" y="66" class="node-sub">Jailbreak &amp; PII Scrub</text>
+    <text x="146" y="78" text-anchor="end" class="node-metric" fill="#F87171">~37 ms</text>
+  </g>
+
+  <!-- STAGE 02: Smriti Gate -->
+  <g transform="translate(350, 135)">
+    <rect width="160" height="90" rx="12" fill="url(#cardGrad)" stroke="#3B82F6" stroke-width="1.5" />
+    <rect x="12" y="12" width="56" height="18" rx="4" fill="rgba(59, 130, 246, 0.15)" />
+    <text x="40" y="25" text-anchor="middle" class="badge" fill="#60A5FA">STAGE 02</text>
+    <text x="14" y="50" class="node-title">Smriti Gate</text>
+    <text x="14" y="66" class="node-sub">Canonical Intent Cache</text>
+    <text x="146" y="78" text-anchor="end" class="node-metric" fill="#60A5FA">&lt; 5 ms</text>
+  </g>
+
+  <!-- STAGE 03: Disha Router -->
+  <g transform="translate(540, 135)">
+    <rect width="160" height="90" rx="12" fill="url(#cardGrad)" stroke="#8B5CF6" stroke-width="1.5" />
+    <rect x="12" y="12" width="56" height="18" rx="4" fill="rgba(139, 92, 246, 0.15)" />
+    <text x="40" y="25" text-anchor="middle" class="badge" fill="#A78BFA">STAGE 03</text>
+    <text x="14" y="50" class="node-title">Disha Router</text>
+    <text x="14" y="66" class="node-sub">SQL / Bypass / Vector</text>
+    <text x="146" y="78" text-anchor="end" class="node-metric" fill="#A78BFA">~38 ms</text>
+  </g>
+
+  <!-- EXTERNAL: Vector DB -->
+  <g transform="translate(740, 135)">
+    <rect width="180" height="90" rx="12" fill="#161B22" stroke="#30363D" stroke-width="1.5" stroke-dasharray="3 3" />
+    <text x="90" y="44" text-anchor="middle" class="node-title" fill="#8B949E">Existing Vector DB</text>
+    <text x="90" y="62" text-anchor="middle" class="node-sub">Pinecone / Qdrant / Weaviate</text>
+    <text x="90" y="78" text-anchor="middle" class="badge" fill="#7EE787">100% UNTOUCHED</text>
+  </g>
+
+  <!-- ================= BOTTOM ROW: POST-RETRIEVAL STAGES ================= -->
+
+  <!-- STAGE 04: Samkshep Slicer -->
+  <g transform="translate(540, 250)">
+    <rect width="160" height="90" rx="12" fill="url(#cardGrad)" stroke="#10B981" stroke-width="2" />
+    <rect x="12" y="12" width="56" height="18" rx="4" fill="rgba(16, 185, 129, 0.15)" />
+    <text x="40" y="25" text-anchor="middle" class="badge" fill="#34D399">STAGE 04</text>
+    <text x="14" y="50" class="node-title">Samkshep Slicer</text>
+    <text x="14" y="66" class="node-sub">Syntax-Safe Pruning (-54%)</text>
+    <text x="146" y="78" text-anchor="end" class="node-metric" fill="#34D399">~69 ms</text>
+  </g>
+
+  <!-- EXTERNAL: Downstream LLM -->
+  <g transform="translate(370, 250)">
+    <rect width="130" height="90" rx="12" fill="#161B22" stroke="#30363D" stroke-width="1.5" stroke-dasharray="3 3" />
+    <text x="65" y="42" text-anchor="middle" class="node-title" fill="#8B949E">Target LLM</text>
+    <text x="65" y="58" text-anchor="middle" class="node-sub">GPT-4o / Claude</text>
+    <text x="65" y="76" text-anchor="middle" class="badge" fill="#34D399">-796ms TTFT</text>
+  </g>
+
+  <!-- STAGE 05: Satya Praman -->
+  <g transform="translate(180, 250)">
+    <rect width="160" height="90" rx="12" fill="url(#cardGrad)" stroke="#10B981" stroke-width="1.5" />
+    <rect x="12" y="12" width="56" height="18" rx="4" fill="rgba(16, 185, 129, 0.15)" />
+    <text x="40" y="25" text-anchor="middle" class="badge" fill="#34D399">STAGE 05</text>
+    <text x="14" y="50" class="node-title">Satya Praman</text>
+    <text x="14" y="66" class="node-sub">Grounding Entity Audit</text>
+    <text x="146" y="78" text-anchor="end" class="node-metric" fill="#34D399">~72 ms</text>
+  </g>
+
+  <!-- OUTPUT: Safe Answer Node -->
+  <g transform="translate(40, 255)">
+    <rect width="100" height="80" rx="10" fill="#161B22" stroke="#34D399" stroke-width="2" />
+    <text x="50" y="38" text-anchor="middle" class="node-title" fill="#34D399">Verified</text>
+    <text x="50" y="54" text-anchor="middle" class="node-title" fill="#34D399">Stream</text>
+  </g>
+
+  <!-- Footer Stats Bar -->
+  <g transform="translate(40, 375)">
+    <text x="0" y="16" class="subtitle">⚡ <tspan fill="#F0F6FC" font-weight="600">The Latency Paradox:</tspan> +180ms Control Plane Overhead  −  796ms LLM Prefill Time  =  <tspan fill="#34D399" font-weight="700">~616ms Net Faster TTFT</tspan></text>
+  </g>
+</svg>
